@@ -9,8 +9,8 @@
 
 
 //--------------WIFI
-#define WIFI_SSID "Buffalo-G-5660" // ご自身の2.4GHz帯のSSIDを入力
-#define WIFI_PASS "k7cx3s37e6b6k" // ご自身のパスワードを入力
+#define WIFI_SSID "Buffalo-G-4970" // ご自身の2.4GHz帯のSSIDを入力
+#define WIFI_PASS "cfn6v438t3rkb" // ご自身のパスワードを入力
 
 WiFiUDP elUDP;
 IPAddress myip;
@@ -85,7 +85,7 @@ void setup() {
 
   // SCD41センサーの初期化
   Serial.println("Initializing I2C and SCD41 Sensor...");
-  Wire.begin();
+  Wire.begin(21, 19); // SDAピンが21番、SCLピンが19番であることを明示的に指定
   scd4x.begin(Wire, 0x62);
 
   uint16_t error;
