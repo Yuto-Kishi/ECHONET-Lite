@@ -8,7 +8,8 @@ https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32
 
 以下のライブラリをインストールします。Arduino IDE
 
-Adafruit NeoPixel by Adafruit
+Adafruit NeoPixel by Adafruit , 
+
 EL_dev_arduino by Hiroshi SUGIMURA
 
 
