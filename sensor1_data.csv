@@ -1,0 +1,5 @@
+timestamp,co2(sensors_sensors1),temperature(sensors_sensors1),humidity(sensors_sensors1),lux(sensors_sensors1),co2(sensors_sensors2),temperature(sensors_sensors2),humidity(sensors_sensors2),lux(sensors_sensors2),co2(sensors_sensors3),temperature(sensors_sensors3),humidity(sensors_sensors3),lux(sensors_sensors3)
+2025-08-06 01:03:32,585,23.08805,59.46441,153.3333,,,,,,,,
+2025-08-06 01:03:38,585,23.07202,59.42779,152.5,,,,,,,,
+2025-08-06 01:03:43,585,23.056,59.38201,153.3333,,,,,,,,
+2025-08-06 01:03:48,585,23.08003,59.38354,152.5,,,,,,,,
