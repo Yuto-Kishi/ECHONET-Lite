@@ -1,0 +1,9 @@
+timestamp,PIR,co2(sensors_sensors1),temperature(sensors_sensors1),humidity(sensors_sensors1),lux(sensors_sensors1),co2(sensors_sensors2),temperature(sensors_sensors2),humidity(sensors_sensors2),lux(sensors_sensors2),co2(sensors_sensors3),temperature(sensors_sensors3),humidity(sensors_sensors3),lux(sensors_sensors3)
+2025-08-06 01:36:18,False,648,22.81033,58.93645,71.66666,,,,,,,,
+2025-08-06 01:36:24,False,649,22.78363,58.92119,71.66666,,,,,,,,
+2025-08-06 01:36:29,False,649,22.78363,58.8632,71.66666,,,,,,,,
+2025-08-06 01:36:34,False,650,22.77028,58.87083,71.66666,,,,,,,,
+2025-08-06 01:36:40,False,650,22.77562,58.84642,72.5,,,,,,,,
+2025-08-06 01:36:45,True,650,22.77295,58.8922,72.5,,,,,,,,
+2025-08-06 01:36:51,True,651,22.75425,58.82658,40.83333,,,,,,,,
+2025-08-06 01:36:56,True,651,22.77562,58.84642,87.5,,,,,,,,

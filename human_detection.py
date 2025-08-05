@@ -4,9 +4,9 @@ import csv
 import datetime
 import os
 import time
-
+#一階和室手前の人感センサー
 # ★変更点1: PIRセンサーのURLに変更
-URL = "http://150.65.179.132:7000/elapi/v1/devices/1921682112000702/properties/detection"
+URL = "http://150.65.179.132:7000/elapi/v1/devices/1921682116000702/properties/detection"
 
 # ★変更点2: 保存するCSVファイル名を変更
 CSV_FILE = "pir_sensor_log.csv"
