@@ -10,7 +10,7 @@ MQTT_PORT = 7883
 CID = "53965d6805152d95"
 
 # --- 複数デバイス対応 ---
-DEVICE_IDS = ["multi-sensors1", "multi-sensors2", "multi-sensors3"]  # 必要に応じて追加
+DEVICE_IDS = ["multi-sensors1", "multi-sensors2", "multi-sensors3","multi-sensors4"]  # 必要に応じて追加
 
 # --- センサ名 ---
 SENSORS = ["co2", "temperature", "humidity", "lux"]
