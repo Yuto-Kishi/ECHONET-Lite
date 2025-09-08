@@ -3,7 +3,7 @@
 #include <ArduinoJson.h>
 
 // ===== Wi-Fi =====
-#define WIFI_SSID "BuffaloStationPro"
+#define WIFI_SSID "BuffaloAirStationPro"
 #define WIFI_PASS "SummerCamp2018"
 
 // ===== Echonet Web API (MQTT Broker) =====
