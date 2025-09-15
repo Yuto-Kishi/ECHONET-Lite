@@ -15,7 +15,7 @@
 #define MQTT_PORT 7883
 
 #define CID "53965d6805152d95"
-#define DEV_ID "multi-sensors2"
+#define DEV_ID "Living_Space"
 
 // --- センサーインスタンス ---
 SensirionI2cScd4x scd4x;
