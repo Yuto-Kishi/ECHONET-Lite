@@ -1,0 +1,12 @@
+                precision    recall  f1-score   support
+
+living_kitchen       1.00      1.00      1.00     20364
+
+      accuracy                           1.00     20364
+     macro avg       1.00      1.00      1.00     20364
+  weighted avg       1.00      1.00      1.00     20364
+
+
+Confusion matrix (rows=true, cols=pred):
+                living_kitchen
+living_kitchen           20364
