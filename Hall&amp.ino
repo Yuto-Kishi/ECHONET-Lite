@@ -4,8 +4,8 @@
 #include <ArduinoJson.h>
 
 // --- Wi-Fi設定 ---
-#define WIFI_SSID "Kissinger"
-#define WIFI_PASS "chkishilish1119"
+#define WIFI_SSID "BuffaloAirStation2018"
+#define WIFI_PASS "SummerCamp2018"
 
 // --- Elwaサーバ設定 ---
 #define MQTT_BROKER "150.65.179.132"
@@ -16,7 +16,7 @@
 
 // --- Hall Sensor ---
 const int HALL_PIN = 27;        // 磁石あり=LOW（アクティブLow）
-bool lastDoorClosed = false;    // 変化検出用（ログに使うだけ）
+bool lastDoorClosed = false;    // 変化検出用（ログ用）
 
 // --- Mic module (KY-038系) ---
 const int MIC_A_PIN = 34;       // A0 → ADC1(GPIO34)
@@ -35,15 +35,95 @@ PubSubClient mqttClient(wifiClient);
 unsigned long lastMicPublishTime  = 0;
 const long    micPublishInterval  = 1000;  // 1s
 unsigned long lastDoorPublishTime = 0;
-const long    doorPublishInterval = 1000;  // ★ドアも毎秒
+const long    doorPublishInterval = 1000;  // 1s
 
-// ========== MQTTユーティリティ ==========
+// --- 送信ウォッチドッグ（10秒成功なし→再初期化） ---
+const unsigned long STALL_TIMEOUT_MS = 10000; // 10s
+unsigned long lastOkPublishMs      = 0;
+
+// ========== Wi-Fi/MQTT ユーティリティ ==========
+void ensureWifiConnected() {
+  if (WiFi.status() == WL_CONNECTED) return;
+  Serial.println("[WiFi] reconnecting...");
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  unsigned long t0 = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - t0 < 15000) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println(WiFi.status() == WL_CONNECTED ? "\n[WiFi] Connected" : "\n[WiFi] FAILED");
+}
+
 void publishMqttMessage(const char* topic, const char* payload) {
   Serial.printf("Publishing to topic: %s\nPayload: %s\n", topic, payload);
-  if (mqttClient.publish(topic, payload)) {
+  bool ok = mqttClient.publish(topic, payload);
+  if (ok) {
     Serial.println("Publish successful.");
+    lastOkPublishMs = millis();
   } else {
     Serial.println("Publish failed.");
+  }
+
+  // ★ 10秒以上、成功publishが無ければ再初期化
+  if (millis() - lastOkPublishMs > STALL_TIMEOUT_MS) {
+    Serial.println("=== Publish stalled >10s: reinitializing MQTT & sensors ===");
+    // 再初期化ルーチン
+    // MQTTは一旦切断
+    if (mqttClient.connected()) mqttClient.disconnect();
+    delay(50);
+
+    // Wi-Fiの再確立
+    ensureWifiConnected();
+
+    // ピン/Sensorの再初期化（このスケッチではGPIO/ADCのみ）
+    pinMode(HALL_PIN, INPUT);
+    pinMode(MIC_D_PIN, INPUT);
+    analogReadResolution(12);
+    analogSetPinAttenuation(MIC_A_PIN, ADC_11db);
+
+    // MQTT再設定＆接続
+    mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
+
+    // 再接続
+    while (!mqttClient.connected()) {
+      Serial.print("[MQTT] Attempting connection...");
+      String clientId = "esp32-client-" + String(DEV_ID);
+      if (mqttClient.connect(clientId.c_str())) {
+        Serial.println("connected");
+        // 再登録
+        char topicReg[128];
+        snprintf(topicReg, sizeof(topicReg), "/server/%s/register", CID);
+        StaticJsonDocument<256> d;
+        d["id"] = DEV_ID;
+        d["deviceType"] = "doorSoundSensor";
+        char payloadReg[256];
+        serializeJson(d, payloadReg);
+        mqttClient.publish(topicReg, payloadReg);
+
+        delay(300);
+        char topicProp[128];
+        snprintf(topicProp, sizeof(topicProp), "/server/%s/%s/properties", CID, DEV_ID);
+        StaticJsonDocument<256> p;
+        JsonObject m = p.createNestedObject("manufacturer");
+        m["code"] = "0x000000";
+        JsonObject desc = m.createNestedObject("descriptions");
+        desc["ja"] = "JAIST"; desc["en"] = "JAIST";
+        JsonObject protocol = p.createNestedObject("protocol");
+        protocol["type"] = "custom_mqtt"; protocol["version"] = "1.0";
+        p["door"] = "OPEN"; p["sound_amp"] = 0; p["sound_trig"] = false;
+        char payloadProp[256];
+        serializeJson(p, payloadProp);
+        mqttClient.publish(topicProp, payloadProp);
+
+        // 成功時間を更新
+        lastOkPublishMs = millis();
+      } else {
+        Serial.print("failed, rc="); Serial.print(mqttClient.state());
+        Serial.println(" retry in 3s");
+        delay(3000);
+      }
+    }
   }
 }
 
@@ -84,18 +164,20 @@ void registerProperties() {
 }
 
 void reconnectMqtt() {
+  ensureWifiConnected();
   while (!mqttClient.connected()) {
-    Serial.print("Attempting MQTT connection...");
+    Serial.print("[MQTT] Attempting connection...");
     String clientId = "esp32-client-" + String(DEV_ID);
     if (mqttClient.connect(clientId.c_str())) {
       Serial.println("connected");
       registerDevice();
       delay(300);
       registerProperties();
+      lastOkPublishMs = millis(); // 接続直後にリセット
     } else {
       Serial.print("failed, rc="); Serial.print(mqttClient.state());
-      Serial.println(" try again in 5 seconds");
-      delay(5000);
+      Serial.println(" retry in 3s");
+      delay(3000);
     }
   }
 }
@@ -115,9 +197,10 @@ uint16_t readMicAmplitude() {
 // ========== setup ==========
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  delay(500);
   Serial.println("\n--- Starting Setup ---");
 
+  WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
   Serial.println("\nWiFi Connected!");
@@ -129,13 +212,22 @@ void setup() {
   analogReadResolution(12);                  // 0..4095
   analogSetPinAttenuation(MIC_A_PIN, ADC_11db); // 0〜3.3Vレンジ相当
 
+  reconnectMqtt();               // 最初に登録まで済ませる
+  lastOkPublishMs = millis();    // ウォッチドッグ初期化
   Serial.println("--- Setup Complete! ---");
 }
 
 // ========== loop ==========
 void loop() {
+  // Wi-Fi/MQTT 維持
+  ensureWifiConnected();
   if (!mqttClient.connected()) reconnectMqtt();
   mqttClient.loop();
+
+  // Wi-Fiが長時間切れていたらウォッチドッグに引っかかる前に即復旧を狙う
+  if (WiFi.status() != WL_CONNECTED) {
+    // 次の publishMqttMessage で再初期化が走る可能性あり
+  }
 
   const unsigned long now = millis();
 
@@ -181,7 +273,7 @@ void loop() {
     serializeJson(d, payload);
     publishMqttMessage(topic, payload);
 
-    // ログ（変化時にだけ差分メッセージも出す）
+    // ログ（変化時）
     if (doorClosed != lastDoorClosed) {
       Serial.printf("Door state changed: %s\n", doorClosed ? "CLOSED" : "OPEN");
       lastDoorClosed = doorClosed;
