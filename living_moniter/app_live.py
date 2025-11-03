@@ -1,189 +1,192 @@
-# -*- coding: utf-8 -*-
-import json
-import time
-import threading
-from itertools import combinations
-
+# app_live.py  —— set_page_config を最初に呼ぶ版
+import time, json, threading
+from pathlib import Path
 import paho.mqtt.client as mqtt
-from PIL import Image, ImageDraw, ImageFont
 import streamlit as st
+from PIL import Image, ImageDraw
 
-# 設定はあなたの config_sections.py から読み込み
-from config_sections import (
-    BROKER,
-    PORT,
-    CID,
-    PIRS,
-    FLOOR_IMAGE,
-    ACTIVE_WINDOW_SEC,
-    SECTIONS,
-    PIR_POS,
-    COMBO_TO_SECTION,
-)
+# 最初の Streamlit コマンドはこれ！
+st.set_page_config(layout="wide")
 
-# ====== UI 基本設定 ======
-st.set_page_config(page_title="Living Presence Monitor", layout="wide")
+# ====== MQTT / ENV ======
+BROKER = "150.65.179.132"
+PORT = 7883
+CID = "53965d6805152d95"
+PIRS = ["PIR1", "PIR2", "PIR3", "PIR4"]
 
-# ====== 状態（セッションスコープ） ======
+# ====== UI / IMAGE ======
+BG_PATH = "living_dining.png"
+ACTIVE_WINDOW_SEC = 2.5
+
+SECTIONS = {
+    "PIR2": (0.00, 0.00, 0.33, 0.33),
+    "PIR2&PIR1": (0.33, 0.00, 0.66, 0.33),
+    "PIR1": (0.66, 0.00, 1.00, 0.33),
+    "PIR2&PIR4": (0.00, 0.33, 0.33, 0.66),
+    "PIR1&PIR3": (0.66, 0.33, 1.00, 0.66),
+    "PIR4": (0.00, 0.66, 0.33, 1.00),
+    "PIR4&PIR3": (0.33, 0.66, 0.66, 1.00),
+    "PIR3": (0.66, 0.66, 1.00, 1.00),
+}
+COMBO_TO_SECTION = {
+    frozenset({"PIR1"}): "PIR1",
+    frozenset({"PIR2"}): "PIR2",
+    frozenset({"PIR3"}): "PIR3",
+    frozenset({"PIR4"}): "PIR4",
+    frozenset({"PIR1", "PIR2"}): "PIR2&PIR1",
+    frozenset({"PIR3", "PIR4"}): "PIR4&PIR3",
+    frozenset({"PIR1", "PIR3"}): "PIR1&PIR3",
+    frozenset({"PIR2", "PIR4"}): "PIR2&PIR4",
+}
+
+
+# ====== shared state (thread-safe) ======
+@st.cache_resource
+def get_shared():
+    return {
+        "lock": threading.Lock(),
+        "connected": False,
+        "rc": None,
+        "last_on": {p: 0.0 for p in PIRS},
+    }
+
+
+shared = get_shared()
+
+
+# ====== MQTT callbacks（UIスレッドを触らない） ======
+def on_connect(c, u, flags, rc):
+    with shared["lock"]:
+        shared["connected"] = rc == 0
+        shared["rc"] = rc
+    if rc == 0:
+        for dev in PIRS:
+            c.subscribe(f"/server/{CID}/{dev}/properties/motion_raw", qos=0)
+
+
+def on_disconnect(c, u, rc):
+    with shared["lock"]:
+        shared["connected"] = False
+        shared["rc"] = rc
+
+
+def on_message(c, u, msg):
+    try:
+        data = json.loads(msg.payload.decode("utf-8", errors="ignore"))
+        val = bool(data.get("motion_raw", False))
+    except Exception:
+        s = msg.payload.decode("utf-8", errors="ignore").strip().lower()
+        val = s in ("1", "true", "on")
+    if not val:
+        return
+    parts = msg.topic.split("/")
+    dev = parts[3] if len(parts) > 3 else None
+    if dev in PIRS:
+        import time as _t
+
+        with shared["lock"]:
+            shared["last_on"][dev] = _t.time()
+
+
+@st.cache_resource
+def start_mqtt():
+    cli = mqtt.Client(client_id=f"streamlit-{int(time.time())}", protocol=mqtt.MQTTv311)
+    cli.on_connect = on_connect
+    cli.on_disconnect = on_disconnect
+    cli.on_message = on_message
+    cli.reconnect_delay_set(1, 10)
+    cli.connect(BROKER, PORT, keepalive=30)
+    cli.loop_start()
+    return cli
+
+
+start_mqtt()
+
+# ====== UI ======
+st.title("Living presence monitor (PIR × 4)")
+
 if "last_on" not in st.session_state:
-    # 各PIRの最終「motion_raw==1」を時刻（epoch秒）で保持
-    st.session_state.last_on = {pid: 0.0 for pid in PIRS}
+    st.session_state.last_on = {p: 0.0 for p in PIRS}
 if "mqtt_ok" not in st.session_state:
     st.session_state.mqtt_ok = False
-if "subscribed" not in st.session_state:
-    st.session_state.subscribed = False
+if "mqtt_rc" not in st.session_state:
+    st.session_state.mqtt_rc = None
 
-# ====== MQTT サブスクライブ ======
-TOPIC_FMT = "/server/{cid}/{dev}/properties/motion_raw"
+with shared["lock"]:
+    st.session_state.last_on.update(shared["last_on"])
+    st.session_state.mqtt_ok = shared["connected"]
+    st.session_state.mqtt_rc = shared["rc"]
 
+now = time.time()
+active = {
+    p for p, t in st.session_state.last_on.items() if (now - t) <= ACTIVE_WINDOW_SEC
+}
+sec_name = COMBO_TO_SECTION.get(frozenset(active))
 
-def on_connect(client, userdata, flags, rc):
-    st.session_state.mqtt_ok = rc == 0
-    if rc == 0 and not st.session_state.subscribed:
-        for dev in PIRS:
-            topic = TOPIC_FMT.format(cid=CID, dev=dev)
-            client.subscribe(topic, qos=0)
-        st.session_state.subscribed = True
+from PIL import Image, ImageDraw
+from pathlib import Path
 
+if not Path(BG_PATH).exists():
+    st.error(f"背景画像が見つかりません: {BG_PATH}")
+else:
+    bg = Image.open(BG_PATH).convert("RGBA")
+    w, h = bg.size
+    overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay, "RGBA")
 
-def on_message(client, userdata, msg):
-    # 期待ペイロード： {"motion_raw": true/false, "timestamp": "HH:MM:SS"} など
-    try:
-        data = json.loads(msg.payload.decode("utf-8"))
-        motion_raw = bool(data.get("motion_raw", False))
-    except Exception:
-        # 文字列 "0"/"1" などフォールバック
-        payload = msg.payload.decode("utf-8").strip().lower()
-        motion_raw = payload in ("1", "true", "on")
+    def rect_from_norm(box):
+        x0, y0, x1, y1 = box
+        return (int(x0 * w), int(y0 * h), int(x1 * w), int(y1 * h))
 
-    # dev名をトピックから抽出
-    parts = msg.topic.split("/")
-    dev = parts[3] if len(parts) >= 4 else None
-    if dev in st.session_state.last_on and motion_raw:
-        st.session_state.last_on[dev] = time.time()
-
-
-def ensure_mqtt():
-    client = mqtt.Client(client_id=f"ui-{int(time.time())}", clean_session=True)
-    client.on_connect = on_connect
-    client.on_message = on_message
-    client.connect(BROKER, PORT, keepalive=30)
-
-    # 別スレッドで常時回す
-    th = threading.Thread(target=client.loop_forever, daemon=True)
-    th.start()
-    return client
-
-
-if not st.session_state.get("mqtt_started", False):
-    ensure_mqtt()
-    st.session_state.mqtt_started = True
-
-
-# ====== 可視化ユーティリティ ======
-def draw_scene(active_sections, active_pirs):
-    """背景の上にセクション（赤）とPIR位置（青）を描く"""
-    img = Image.open(FLOOR_IMAGE).convert("RGBA")
-    w, h = img.size
-    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    d = ImageDraw.Draw(overlay)
-
-    # セクション枠（薄いグレー）
-    for name, (x0, y0, x1, y1) in SECTIONS.items():
-        rect = (int(x0 * w), int(y0 * h), int(x1 * w), int(y1 * h))
-        d.rectangle(rect, outline=(60, 60, 60, 180), width=3)
-
-    # アクティブなセクションを赤で塗る
-    for name in active_sections:
-        if name not in SECTIONS:
-            continue
-        x0, y0, x1, y1 = SECTIONS[name]
-        rect = (int(x0 * w), int(y0 * h), int(x1 * w), int(y1 * h))
-        d.rectangle(rect, fill=(255, 64, 64, 120), outline=(200, 0, 0, 220), width=4)
-
-    # PIR配置を青でマーク
-    for pid, (px, py) in PIR_POS.items():
-        cx, cy = int(px * w), int(py * h)
-        r = max(6, int(min(w, h) * 0.01))
-        color = (30, 90, 200, 255) if pid not in active_pirs else (30, 160, 255, 255)
-        d.ellipse(
-            (cx - r, cy - r, cx + r, cy + r),
-            fill=color,
-            outline=(255, 255, 255, 200),
-            width=2,
+    if sec_name:
+        box = SECTIONS[sec_name]
+        draw.rectangle(
+            rect_from_norm(box), fill=(255, 0, 0, 80), outline=(255, 0, 0, 180), width=3
         )
-        d.text((cx + r + 4, cy - r - 2), pid, fill=(20, 20, 20, 220))
-
-    return Image.alpha_composite(img, overlay)
-
-
-def decide_sections(active_pirs):
-    """有効PIR集合→ハイライトすべきセクション集合を決定"""
-    fs = frozenset(active_pirs)
-    if not fs:
-        return set()
-
-    # 正規に一意決定できる場合
-    sec = COMBO_TO_SECTION.get(fs)
-    if sec:
-        return {sec}
-
-    # あいまい（3台以上など）→部分集合（1台 or 2台）のマッチを全部塗る
-    result = set()
-    for k in range(1, 3):  # 1台と2台の組合せだけを見る
-        for sub in combinations(active_pirs, k):
-            sname = COMBO_TO_SECTION.get(frozenset(sub))
-            if sname:
-                result.add(sname)
-    return result
-
-
-# ====== レイアウト ======
-left, right = st.columns([4, 3])
-
-with right:
-    st.markdown("### Presence (last {:.1f}s)".format(ACTIVE_WINDOW_SEC))
-    now = time.time()
-    rows = []
-    for pid in PIRS:
-        age = now - st.session_state.last_on[pid]
-        active = age <= ACTIVE_WINDOW_SEC
-        rows.append(
-            (
-                pid,
-                "ON" if active else "off",
-                f"{age:4.1f}s ago" if st.session_state.last_on[pid] > 0 else "—",
+    else:
+        combos = []
+        for k, box in SECTIONS.items():
+            need = set(k.split("&"))
+            if need.issubset(active):
+                combos.append(k)
+        for k in combos:
+            draw.rectangle(
+                rect_from_norm(SECTIONS[k]),
+                fill=(255, 0, 0, 60),
+                outline=(255, 0, 0, 160),
+                width=2,
             )
-        )
-    st.table(
-        {
-            "PIR": [r[0] for r in rows],
-            "state": [r[1] for r in rows],
-            "last_on": [r[2] for r in rows],
-        }
-    )
 
-    st.write("MQTT:", "✅ connected" if st.session_state.mqtt_ok else "❌ disconnected")
+    composed = Image.alpha_composite(bg, overlay)
+    st.image(composed, use_column_width=True)
 
-with left:
-    # 直近 ACTIVE_WINDOW_SEC 内に反応したPIRを抽出
-    now = time.time()
-    active_pirs = {
-        pid
-        for pid, t in st.session_state.last_on.items()
-        if (now - t) <= ACTIVE_WINDOW_SEC
-    }
-    active_sections = decide_sections(active_pirs)
-    canvas = draw_scene(active_sections, active_pirs)
-    st.image(canvas, use_column_width=True)
+# ====== 表示部分までそのまま ======
 
-# ====== 1秒ごとの自動更新 ======
-try:
-    from streamlit_autorefresh import st_autorefresh
+st.subheader("Status (last 2.5s)")
+st.write(
+    "MQTT:",
+    "✅ connected" if st.session_state.mqtt_ok else "❌ disconnected",
+    f"(rc={st.session_state.mqtt_rc})",
+)
+st.json({p: round(now - t, 2) for p, t in st.session_state.last_on.items()})
 
-    st_autorefresh(interval=1000, key="auto_refresh")
-except Exception:
-    # 代替：軽いインジケータ（Streamlitはループを推奨しないため、手動F5でも可）
-    st.caption(
-        "Auto-refresh: 1s (fallback mode) — consider `pip install streamlit-autorefresh`"
-    )
+# ====== ↓ここを置き換える=====
+# st.autorefresh(interval=1000, key="refresh") は削除して、
+# 以下の自動更新処理を追加
+import streamlit.runtime.scriptrunner.script_run_context as stc
+import threading
+
+
+def rerun_later(sec: float):
+    """sec 秒後にページを再描画"""
+
+    def _rerun():
+        import streamlit as st
+
+        st.experimental_rerun()
+
+    threading.Timer(sec, _rerun).start()
+
+
+# 1秒ごとに自動更新
+rerun_later(1.0)
