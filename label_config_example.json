@@ -1,0 +1,26 @@
+{
+  "none_label": "none",
+  "drop_if_multi_true": true,
+  "label_rules": {
+    "washitsu": {
+      "any_true": [
+        "thermal-1"
+      ]
+    },
+    "sleeping": {
+      "any_true": [
+        "sleep_pir_http1",
+        "sleep_pir_http2"
+      ]
+    },
+    "living": {
+      "any_true": [
+        "mic_occupied",
+        "pir2"
+      ]
+    },
+    "kitchen": {
+      "any_true": []
+    }
+  }
+}

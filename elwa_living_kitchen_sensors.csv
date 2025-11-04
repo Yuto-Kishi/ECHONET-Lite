@@ -1,0 +1,7 @@
+timestamp,co2(Living1),temperature(Living1),humidity(Living1),lux(Living1),co2(Living2),temperature(Living2),humidity(Living2),lux(Living2),co2(Living3),temperature(Living3),humidity(Living3),lux(Living3),co2(Kitchen),temperature(Kitchen),humidity(Kitchen),lux(Kitchen),scd40_co2,scd40_temp,scd40_hum,sen55_pm1,sen55_pm2_5,sen55_pm4,sen55_pm10,sen55_temp,sen55_hum,sen55_voc,sen55_nox,door,sound_amp_door,sound_trig_door,pir2,sound_amp_pir,sound_trig_pir,mic_occupied,thermal-1,pir_http_1921682115000702,pir_http_1921682115000701,pir_http_1921682114000701,pir_http_1921682114000702,pir_http_1921682113000701,pir_http_1921682113000702
+2025-09-16 15:57:26,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,0,,,,,,
+2025-09-16 15:57:27,,,,,,,,,621,20.30289,,,,,,,,,,3.4,3.6,3.6,3.6,23.335,41.51,64,1,CLOSED,1,,0,2,,0,0,0,0,0,0,,
+2025-09-16 15:57:28,,,,,,,,,621,20.30289,51.00175,113.3333,,,,,,,,3.4,3.6,3.6,3.6,23.335,41.51,64,1,CLOSED,2,,0,2,,0,0,0,0,0,0,0,
+2025-09-16 15:57:29,,,,,,,,,621,20.30289,51.00175,113.3333,,,,,,,,3.4,3.6,3.6,3.6,23.335,41.51,64,1,CLOSED,1,,0,2,,0,0,0,0,0,0,0,0
+2025-09-16 15:57:30,,,,,,,,,621,20.30289,51.00175,113.3333,,,,,,,,3.4,3.6,3.6,3.6,23.335,41.51,64,1,CLOSED,2,,0,2,,0,0,0,0,0,0,0,0
+2025-09-16 15:57:31,,,,,638,,,,621,20.30289,51.00175,113.3333,,,,,635,27.35256,36.9192,3.4,3.6,3.6,3.6,23.335,41.5,64,1,CLOSED,2,,0,2,,0,0,0,0,0,0,0,0

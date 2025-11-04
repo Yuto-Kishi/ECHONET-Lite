@@ -1,0 +1,14 @@
+{
+    "name": "pir-dashboard",
+    "version": "1.0.0",
+    "description": "Real-time PIR sensor dashboard",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "mqtt": "^5.3.5",
+        "ws": "^8.14.2"
+    }
+}

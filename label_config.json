@@ -1,0 +1,22 @@
+{
+    "none_label": "unknown",
+    "resolve_multi": "score",
+    "priority": ["sleeping_room", "washitsu", "living"],
+
+    "label_rules": {
+        "sleeping_room": { "any_true": ["sleeping_room__pir2", "sleeping_room__pir_http_1921682121000701", "sleeping_room__pir_http_1921682121000702"] },
+        "washitsu": { "any_true": ["washitsu__pir2", "washitsu__pir_http_0701", "washitsu__pir_http_0702"] },
+        "living": {
+            "any_true": ["living__pir2", "living__pir_http_1921682115000701", "living__pir_http_1921682115000702",
+                "living__pir_http_1921682114000701", "living__pir_http_1921682114000702",
+                "living__pir_http_1921682113000701", "living__pir_http_1921682113000702"
+            ]
+        }
+    },
+
+    "co2_columns": {
+        "sleeping_room": ["sleeping_room__co2"],
+        "washitsu": ["washitsu__co2"],
+        "living": ["living__co2"]
+    }
+}

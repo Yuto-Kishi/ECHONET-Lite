@@ -1,0 +1,39 @@
+{
+  "ts_col": "timestamp",
+  "label_columns_used": [
+    "living__pir2",
+    "living__pir_http_1921682113000701",
+    "living__pir_http_1921682113000702",
+    "living__pir_http_1921682114000701",
+    "living__pir_http_1921682114000702",
+    "living__pir_http_1921682115000701",
+    "living__pir_http_1921682115000702",
+    "living__sound_trig_pir",
+    "living__thermal-1",
+    "sleeping_room__pir2",
+    "sleeping_room__pir_http_1921682121000701",
+    "sleeping_room__pir_http_1921682121000702",
+    "sleeping_room__sound_trig_pir",
+    "washitsu__pir2",
+    "washitsu__pir_http_0701",
+    "washitsu__pir_http_0702",
+    "washitsu__sound_trig_pir",
+    "washitsu__thermal-1"
+  ],
+  "class_names": [
+    "living_kitchen"
+  ],
+  "args": {
+    "csv": "combined_ml_ready.csv",
+    "outdir": "model_out",
+    "ts_col": "timestamp",
+    "test_ratio": 0.3,
+    "n_est": 300,
+    "min_leaf": 3,
+    "label_col": null,
+    "label_config": "label_config.json",
+    "label_report_only": false,
+    "no_extra_features": false
+  },
+  "feature_hash": "8aa512427aab1ebb5b0ea9e1ece1ebfdb31fb1f603753b598025e6cb4d7d94f5"
+}
