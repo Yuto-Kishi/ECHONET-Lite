@@ -6,43 +6,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>リアルタイム在室・環境状況</title>
     <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
+
 </head>
 
 <body>
-    <h1>食堂・居間 リアルタイム在室・環境状況</h1>
+
+    <div id="realtime-clock"></div>
+
+    <h1 id="main-title">食堂・居間 リアルタイム在室・環境状況</h1>
 
     <div id="air-quality-container">
-        <div class="aq-box">
+        <div class="aq-box" id="box-co2">
             <span class="aq-label">CO2</span>
             <span class="aq-value" id="val-co2">---</span>
             <span class="aq-unit">ppm</span>
         </div>
-        <div class="aq-box">
+        <div class="aq-box" id="box-temp">
             <span class="aq-label">温度</span>
             <span class="aq-value" id="val-temp">--.-</span>
             <span class="aq-unit">°C</span>
         </div>
-        <div class="aq-box">
+        <div class="aq-box" id="box-hum">
             <span class="aq-label">湿度</span>
             <span class="aq-value" id="val-hum">--.-</span>
             <span class="aq-unit">%</span>
         </div>
-        <div class="aq-box">
+        <div class="aq-box" id="box-pm25">
             <span class="aq-label">PM2.5</span>
             <span class="aq-value" id="val-pm25">--.-</span>
             <span class="aq-unit">µg/m³</span>
         </div>
-        <div class="aq-box">
+        <div class="aq-box" id="box-voc">
             <span class="aq-label">VOC</span>
             <span class="aq-value" id="val-voc">---</span>
             <span class="aq-unit">index</span>
         </div>
-        <div class="aq-box">
+        <div class="aq-box" id="box-nox">
             <span class="aq-label">NOx</span>
             <span class="aq-value" id="val-nox">---</span>
             <span class="aq-unit">index</span>
         </div>
     </div>
+
+    <div id="chart-container">
+        <div class="chart-box" id="chart-box-co2">
+            <canvas id="co2Chart"></canvas>
+        </div>
+        <div class="chart-box" id="chart-box-temp">
+            <canvas id="tempChart"></canvas>
+        </div>
+        <div class="chart-box" id="chart-box-hum">
+            <canvas id="humChart"></canvas>
+        </div>
+        <div class="chart-box" id="chart-box-pm25">
+            <canvas id="pm25Chart"></canvas>
+        </div>
+        <div class="chart-box" id="chart-box-voc">
+            <canvas id="vocChart"></canvas>
+        </div>
+    </div>
+
     <div id="room-container">
         <img src="living_dining.png" alt="食堂・居間" class="background-image">
 

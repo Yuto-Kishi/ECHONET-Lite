@@ -3,17 +3,17 @@ body {
     background-color: #f0f0f0;
     text-align: center;
     margin: 0;
-    /* bodyのデフォルトマージンをリセット */
     padding: 20px;
     box-sizing: border-box;
-    /* paddingがwidthに含まれるように */
+    padding-top: 50px;
+    /* ★ ヘッダー（時計）のためのスペース */
 }
 
 h1 {
     font-size: 2.5em;
     margin-bottom: 30px;
-    color: #9b01b6;
-    /* 変更を適用 */
+    color: #000000;
+    /* 黒色 */
 }
 
 
@@ -21,17 +21,11 @@ h1 {
 
 #room-container {
     position: relative;
-    /* 子要素を絶対配置する基準 */
     width: 80vw;
-    /* 画面幅の80% */
     max-width: 900px;
-    /* 最大幅 */
     margin: 20px auto;
-    /* 頂いた寸法 1459x1213 を設定 */
     aspect-ratio: 1459 / 1213;
-    /* 変更を適用 */
     overflow: hidden;
-    /* はみ出し防止 */
 }
 
 
@@ -40,12 +34,10 @@ h1 {
 .background-image {
     width: 100%;
     height: 100%;
-    /* コンテナいっぱいに広げる */
-    object-fit: contain;
-    /* 変更を適用 (fill -> contain) */
+    object-fit: fill;
+    /* グリッドのズレ防止 */
     display: block;
     opacity: 0.6;
-    /* 背景を少し薄くする */
     position: absolute;
     top: 0;
     left: 0;
@@ -62,35 +54,24 @@ h1 {
     height: 100%;
     display: grid;
     grid-template-columns: 2fr 1fr 2fr;
-    /* 変更を適用 (列の比率) */
     grid-template-rows: repeat(3, 1fr);
-    /* 3行 */
-    /* 区切り線 */
     border-top: 2px solid #af06f2;
-    /* 変更を適用 (色) */
     border-left: 2px solid #af06f2;
-    /* 変更を適用 (色) */
 }
 
 
 /* 各センサーゾーンの基本スタイル */
 
 .zone {
-    /* グリッドのセルごとの区切り線 */
     border-right: 2px solid #af06f2;
-    /* 変更を適用 (色) */
     border-bottom: 2px solid #af06f2;
-    /* 変更を適用 (色) */
     display: flex;
     justify-content: center;
     align-items: center;
     font-weight: bold;
     font-size: 1.1em;
     color: rgba(122, 7, 244, 0.544);
-    /* 変更を適用 (色) */
     background-color: rgba(126, 11, 203, 0.047);
-    /* 変更を適用 (色) */
-    /* 色が変化するアニメーション */
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
@@ -101,44 +82,41 @@ h1 {
     font-size: 1.5em;
     color: #555;
     background-color: rgba(255, 255, 255, 0.3);
-    /* 少し明るめに */
 }
-
-
-/* ★ これが「人がいる」状態 ★ */
 
 .zone.active {
     background-color: rgba(255, 0, 166, 0.6);
-    /* 変更を適用 (色) */
     color: white;
     box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
-    /* 発光エフェクト */
 }
 
 
-/* --- (ここから M5Stack用スタイル) --- */
+/* --- M5Stack用スタイル --- */
 
 #air-quality-container {
     display: flex;
-    flex-wrap: wrap;
-    /* 折り返しあり */
+    flex-wrap: nowrap;
+    /* 折り返さない */
     justify-content: center;
-    gap: 15px;
-    /* ボックス間の隙間 */
+    gap: 5px;
+    /* 隙間を 10px に縮小 */
     margin: 0 auto 30px auto;
-    /* 部屋グリッドの上 */
     max-width: 900px;
+    padding-bottom: 10px;
+    /* スクロールバーのための余白 */
+    overflow-x: auto;
+    /* はみ出しスクロール */
 }
 
 .aq-box {
     background-color: #ffffff;
     border-radius: 8px;
-    padding: 12px 20px;
-    min-width: 120px;
-    /* ボックスの最小幅 */
+    padding: 7px 12px;
+    /* 余白を 10px 15px に縮小 */
+    min-width: 110px;
+    /* 最小幅を 110px に縮小 */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     text-align: left;
-    /* 左側のアクセントカラーは、ご指定の紫テーマに合わせます */
     border-left: 5px solid #9b01b6;
 }
 
@@ -152,7 +130,6 @@ h1 {
 .aq-box .aq-value {
     display: inline-block;
     font-size: 2.0em;
-    /* 数値を大きく */
     font-weight: 600;
     color: #000;
     line-height: 1.2;
@@ -165,15 +142,57 @@ h1 {
     color: #777;
 }
 
-
-/* CO2レベルに応じて色を変える (例) */
-
 .aq-box#box-co2.warn {
     border-left-color: #ffc107;
-    /* 黄色 */
 }
 
 .aq-box#box-co2.danger {
     border-left-color: #dc3545;
-    /* 赤色 */
 }
+
+
+/* --- チャート用スタイル --- */
+
+#chart-container {
+    display: flex;
+    flex-wrap: wrap;
+    /* 折り返しあり */
+    gap: 20px;
+    justify-content: center;
+    max-width: 900px;
+    margin: 0 auto 30px auto;
+}
+
+.chart-box {
+    width: calc(33.33% - 14px);
+    /* 3列に並ぶよう幅を調整 */
+    min-width: 250px;
+    /* 最小幅 */
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+
+/* ★★★ リアルタイム時計 (ここから追加) ★★★ */
+
+#realtime-clock {
+    position: fixed;
+    /* 画面に固定 */
+    top: 10px;
+    right: 20px;
+    font-size: 1.0em;
+    /* 少し大きく */
+    font-weight: bold;
+    color: #333;
+    background-color: rgba(255, 255, 255, 0.7);
+    /* 少し背景色 */
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 1000;
+    /* 他の要素より手前に表示 */
+}
+
+
+/* ★★★ (ここまで追加) ★★★ */
