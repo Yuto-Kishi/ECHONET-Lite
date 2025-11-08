@@ -12,11 +12,9 @@ body {
 h1 {
     font-size: 2.5em;
     margin-bottom: 30px;
-    color: #333;
+    color: #9b01b6;
+    /* 変更を適用 */
 }
-
-
-/* 部屋全体のコンテナ */
 
 
 /* 部屋全体のコンテナ */
@@ -29,10 +27,9 @@ h1 {
     max-width: 900px;
     /* 最大幅 */
     margin: 20px auto;
-    /* ↓↓↓ ここを修正 ↓↓↓ */
     /* 頂いた寸法 1459x1213 を設定 */
     aspect-ratio: 1459 / 1213;
-    /* ↑↑↑ ここを修正 ↑↑↑ */
+    /* 変更を適用 */
     overflow: hidden;
     /* はみ出し防止 */
 }
@@ -45,7 +42,7 @@ h1 {
     height: 100%;
     /* コンテナいっぱいに広げる */
     object-fit: contain;
-    /* 画像全体が表示されるように */
+    /* 変更を適用 (fill -> contain) */
     display: block;
     opacity: 0.6;
     /* 背景を少し薄くする */
@@ -65,14 +62,14 @@ h1 {
     height: 100%;
     display: grid;
     grid-template-columns: 2fr 1fr 2fr;
-    /* 3列 */
+    /* 変更を適用 (列の比率) */
     grid-template-rows: repeat(3, 1fr);
     /* 3行 */
     /* 区切り線 */
-    border-top: 2px solid #666;
-    /* グリッドの上枠 */
-    border-left: 2px solid #666;
-    /* グリッドの左枠 */
+    border-top: 2px solid #af06f2;
+    /* 変更を適用 (色) */
+    border-left: 2px solid #af06f2;
+    /* 変更を適用 (色) */
 }
 
 
@@ -80,17 +77,19 @@ h1 {
 
 .zone {
     /* グリッドのセルごとの区切り線 */
-    border-right: 2px solid #666;
-    border-bottom: 2px solid #666;
+    border-right: 2px solid #af06f2;
+    /* 変更を適用 (色) */
+    border-bottom: 2px solid #af06f2;
+    /* 変更を適用 (色) */
     display: flex;
     justify-content: center;
     align-items: center;
     font-weight: bold;
     font-size: 1.1em;
-    color: rgba(0, 0, 0, 0.4);
-    /* テキストも半透明に */
-    background-color: rgba(255, 255, 255, 0.1);
-    /* 少しだけ背景色をつけて見やすく */
+    color: rgba(122, 7, 244, 0.544);
+    /* 変更を適用 (色) */
+    background-color: rgba(126, 11, 203, 0.047);
+    /* 変更を適用 (色) */
     /* 色が変化するアニメーション */
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
@@ -109,9 +108,72 @@ h1 {
 /* ★ これが「人がいる」状態 ★ */
 
 .zone.active {
-    background-color: rgba(255, 0, 0, 0.6);
-    /* 半透明の赤を少し濃く */
+    background-color: rgba(255, 0, 166, 0.6);
+    /* 変更を適用 (色) */
     color: white;
     box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
     /* 発光エフェクト */
+}
+
+
+/* --- (ここから M5Stack用スタイル) --- */
+
+#air-quality-container {
+    display: flex;
+    flex-wrap: wrap;
+    /* 折り返しあり */
+    justify-content: center;
+    gap: 15px;
+    /* ボックス間の隙間 */
+    margin: 0 auto 30px auto;
+    /* 部屋グリッドの上 */
+    max-width: 900px;
+}
+
+.aq-box {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 12px 20px;
+    min-width: 120px;
+    /* ボックスの最小幅 */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: left;
+    /* 左側のアクセントカラーは、ご指定の紫テーマに合わせます */
+    border-left: 5px solid #9b01b6;
+}
+
+.aq-box .aq-label {
+    display: block;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #555;
+}
+
+.aq-box .aq-value {
+    display: inline-block;
+    font-size: 2.0em;
+    /* 数値を大きく */
+    font-weight: 600;
+    color: #000;
+    line-height: 1.2;
+    margin-right: 5px;
+}
+
+.aq-box .aq-unit {
+    display: inline-block;
+    font-size: 0.9em;
+    color: #777;
+}
+
+
+/* CO2レベルに応じて色を変える (例) */
+
+.aq-box#box-co2.warn {
+    border-left-color: #ffc107;
+    /* 黄色 */
+}
+
+.aq-box#box-co2.danger {
+    border-left-color: #dc3545;
+    /* 赤色 */
 }

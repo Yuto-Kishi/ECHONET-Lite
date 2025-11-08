@@ -14,10 +14,9 @@
 #define MQTT_BROKER "150.65.179.132"
 #define MQTT_PORT   7883
 #define CID         "53965d6805152d95"
-#define DEV_ID      "M5Stack2"
+#define DEV_ID      "M5Stack2"//リビングキッチン
 
-// ========= AirQ I2C & GPIO =========
-// ★ サンプルコードに基づき、11, 12 に修正
+// ========= AirQ I2C & GPIO (サンプルコード 11, 12, LOW に基づく) =========
 constexpr int PIN_I2C_SDA = 11;
 constexpr int PIN_I2C_SCL = 12;
 constexpr int PIN_EXT_SENSOR_EN = 10;  // LOW = 外部センサ有効
@@ -30,9 +29,6 @@ constexpr uint32_t SCD40_POLL_INTERVAL_MS = 500;  // 0.5s（≈5sごとにready�
 constexpr uint32_t WIFI_CHECK_INTERVAL_MS = 5000; // Wi-Fi再接続試行間隔
 constexpr uint32_t MQTT_RETRY_INTERVAL_MS = 3000; // MQTT再接続試行間隔
 
-// ========= センサーヘルスチェック =========
-constexpr uint32_t SENSOR_HEALTH_CHECK_MS = 5000; // 5秒ごとにヘルスチェック
-
 // ========= インスタンス =========
 SensirionI2cScd4x scd4x;   // SCD40/41: CO2 / Temp / Hum
 SensirionI2CSen5x sen5x;   // SEN55    : PM / VOC / NOx / Temp / Hum
@@ -44,11 +40,8 @@ unsigned long lastSen55ReadMs   = 0;
 unsigned long lastScd40PollMs   = 0;
 unsigned long lastWifiCheckMs   = 0;
 unsigned long lastMqttAttemptMs = 0;
-unsigned long lastHealthCheckMs = 0; // ヘルスチェック用タイマー
 
-struct { bool valid=false; uint16_t co2=0; float temp=NAN, hum=NAN; } scd;
-struct { bool valid=false; float pm1=NAN, pm25=NAN, pm4=NAN, pm10=NAN, temp=NAN, hum=NAN, voc=NAN, nox=NAN; } sen;
-
+// (MQTTユーティリティ、registerDevice, registerProperties は変更なし)
 // ---------- MQTTユーティリティ ----------
 void publishMqttMessage(const char* topic, const char* payload) {
   if (!mqttClient.connected()) {
@@ -109,27 +102,27 @@ void publish_scd40(uint16_t co2, float temp, float hum) {
   { StaticJsonDocument<64> d; d["scd40_hum"]  = hum;  serializeJson(d, payload); publishMqttMessage(topic, payload); }
 }
 
-void publish_sen55(const decltype(sen)& s) {
+void publish_sen55(float pm1, float pm25, float pm4, float pm10, float hum, float temp, float voc, float nox) {
   char topic[160], payload[160];
   snprintf(topic, sizeof(topic), "/server/%s/%s/properties/sen55_pm1", CID, DEV_ID);
-  { StaticJsonDocument<64> d; d["sen55_pm1"] = s.pm1; serializeJson(d, payload); publishMqttMessage(topic, payload); }
+  { StaticJsonDocument<64> d; d["sen55_pm1"] = pm1; serializeJson(d, payload); publishMqttMessage(topic, payload); }
   snprintf(topic, sizeof(topic), "/server/%s/%s/properties/sen55_pm2_5", CID, DEV_ID);
-  { StaticJsonDocument<64> d; d["sen55_pm2_5"] = s.pm25; serializeJson(d, payload); publishMqttMessage(topic, payload); }
+  { StaticJsonDocument<64> d; d["sen55_pm2_5"] = pm25; serializeJson(d, payload); publishMqttMessage(topic, payload); }
   snprintf(topic, sizeof(topic), "/server/%s/%s/properties/sen55_pm4", CID, DEV_ID);
-  { StaticJsonDocument<64> d; d["sen55_pm4"] = s.pm4; serializeJson(d, payload); publishMqttMessage(topic, payload); }
+  { StaticJsonDocument<64> d; d["sen55_pm4"] = pm4; serializeJson(d, payload); publishMqttMessage(topic, payload); }
   snprintf(topic, sizeof(topic), "/server/%s/%s/properties/sen55_pm10", CID, DEV_ID);
-  { StaticJsonDocument<64> d; d["sen55_pm10"] = s.pm10; serializeJson(d, payload); publishMqttMessage(topic, payload); }
+  { StaticJsonDocument<64> d; d["sen55_pm10"] = pm10; serializeJson(d, payload); publishMqttMessage(topic, payload); }
   snprintf(topic, sizeof(topic), "/server/%s/%s/properties/sen55_temp", CID, DEV_ID);
-  { StaticJsonDocument<64> d; d["sen55_temp"] = s.temp; serializeJson(d, payload); publishMqttMessage(topic, payload); }
+  { StaticJsonDocument<64> d; d["sen55_temp"] = temp; serializeJson(d, payload); publishMqttMessage(topic, payload); }
   snprintf(topic, sizeof(topic), "/server/%s/%s/properties/sen55_hum", CID, DEV_ID);
-  { StaticJsonDocument<64> d; d["sen55_hum"]  = s.hum;  serializeJson(d, payload); publishMqttMessage(topic, payload); }
+  { StaticJsonDocument<64> d; d["sen55_hum"]  = hum;  serializeJson(d, payload); publishMqttMessage(topic, payload); }
   snprintf(topic, sizeof(topic), "/server/%s/%s/properties/sen55_voc", CID, DEV_ID);
-  { StaticJsonDocument<64> d; d["sen55_voc"] = s.voc; serializeJson(d, payload); publishMqttMessage(topic, payload); }
+  { StaticJsonDocument<64> d; d["sen55_voc"] = voc; serializeJson(d, payload); publishMqttMessage(topic, payload); }
   snprintf(topic, sizeof(topic), "/server/%s/%s/properties/sen55_nox", CID, DEV_ID);
-  { StaticJsonDocument<64> d; d["sen55_nox"] = s.nox; serializeJson(d, payload); publishMqttMessage(topic, payload); }
+  { StaticJsonDocument<64> d; d["sen55_nox"] = nox; serializeJson(d, payload); publishMqttMessage(topic, payload); }
 }
 
-// ---------- ネットワーク・ウォッチドッグ（非ブロッキング） ----------
+// ---------- ネットワーク・ウォッチドッグ（非ブロッキング） (変更なし) ----------
 bool ensureWiFi() {
   if (WiFi.status() == WL_CONNECTED) return true;
   if (millis() - lastWifiCheckMs >= WIFI_CHECK_INTERVAL_MS) {
@@ -166,16 +159,17 @@ void networkWatchdog() {
   if (mqttClient.connected()) mqttClient.loop();
 }
 
-// ---------- 初期化 ----------
+// ---------- 初期化 (変更なし) ----------
 void initSensors() {
-  // ★ 【修正】M5.begin()の後で、正しいピンでI2Cを明示的に初期化
+  
+  // センサー電源制御（LOWで有効）
+  pinMode(PIN_EXT_SENSOR_EN, OUTPUT);
+  digitalWrite(PIN_EXT_SENSOR_EN, LOW); 
+  delay(10); // 電源安定化
+
+  // I2Cをピン(11, 12)で明示的に初期化
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL); 
   delay(10); // I2Cバス安定化
-
-  // 外部センサー電源制御（LOWで有効）
-  // (サンプルコード SEN55用 にも含まれているため重要)
-  pinMode(PIN_EXT_SENSOR_EN, OUTPUT);
-  digitalWrite(PIN_EXT_SENSOR_EN, LOW);
 
   // --- SCD40 ---
   scd4x.begin(Wire, 0x62);
@@ -204,29 +198,9 @@ void initSensors() {
   } else {
     Serial.println("SEN55 started (1s/update).");
   }
-  
-  // 読み取りフラグをリセット (falseにして初回チェックに備える)
-  scd.valid = false;
-  sen.valid = false;
 }
 
-// ---------- センサーヘルスチェック ----------
-void healthCheck() {
-  // 5秒に1回だけ実行
-  if (millis() - lastHealthCheckMs < SENSOR_HEALTH_CHECK_MS) return;
-  lastHealthCheckMs = millis();
-
-  // センサーの `valid` フラグは、loop内の読み取り成功/失敗で更新されている。
-  // どちらかが false の場合（＝直近の読み取りが失敗している）、センサーが
-  // ストールしているとみなし、initSensors() を再実行する。
-  if (!scd.valid || !sen.valid) {
-    Serial.println("[WARN] Sensor read failed or stalled. Re-initializing sensors...");
-    initSensors();
-  } else {
-    // 5秒ごとに正常動作ログを出す
-    Serial.println("[HEALTH] Sensors OK.");
-  }
-}
+// ---------- ヘルスチェック関数を削除 ----------
 
 // =====================================================
 
@@ -234,23 +208,22 @@ void setup() {
   Serial.begin(115200);
   delay(200);
 
-  // 画面（必要なら表示追加）
-  auto cfg = M5.config();
-  M5.begin(cfg); // ★M5.begin() を先に実行
+  // ★★★ M5.begin() を引数なしで呼び出す
+  M5.begin();
+  
   M5.Display.clear(TFT_BLACK);
   M5.Display.setTextColor(TFT_WHITE, TFT_BLACK);
   M5.Display.setTextSize(1);
 
-  // Wi-Fiはここでは「開始」だけ（実接続はwatchdogに任せる）
+  // Wi-Fi
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
 
-  // MQTTサーバ設定
+  // MQTT
   mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
   mqttClient.setKeepAlive(30);
 
-  // I2C & センサー
-  // ★ M5.begin() の後に実行
+  // I2C & センサー (M5.begin の後に実行)
   initSensors();
 
   Serial.println("--- AirQ with auto-reconnect (Wi-Fi & MQTT) ---");
@@ -262,8 +235,8 @@ void loop() {
   // 1) ネットワークの自動復旧（Wi-Fi→MQTT の順）
   networkWatchdog();
 
-  // 2) センサーのヘルスチェック（5秒ごと）
-  healthCheck();
+  // 2) ヘルスチェックの呼び出しを削除
+  // healthCheck();
 
   // 3) SEN55: 1秒ごとに読み取り & テキスト表示 & MQTT
   if (now - lastSen55ReadMs >= SEN55_INTERVAL_MS) {
@@ -274,18 +247,15 @@ void loop() {
     if (err) {
       char em[64]; errorToString(err, em, sizeof(em));
       Serial.print("SEN55 read error: "); Serial.println(em);
-      sen.valid = false; // ★ヘルスチェック用に失敗を記録
     } else {
-      sen.valid = true; // ★ヘルスチェック用に成功を記録
-      sen.pm1 = pm1; sen.pm25 = pm25; sen.pm4 = pm4; sen.pm10 = pm10;
-      sen.temp = tC; sen.hum  = rH;   sen.voc = voc;  sen.nox = nox;
-
       // シリアル（テキスト）
       Serial.printf("PM1.0=%.1f ug/m3  PM2.5=%.1f ug/m3  PM4.0=%.1f ug/m3  PM10=%.1f ug/m3  Temp=%.2fC  Hum=%.2f%%RH  VOC=%.1f  NOx=%.1f\n",
-                      sen.pm1, sen.pm25, sen.pm4, sen.pm10, sen.temp, sen.hum, sen.voc, sen.nox);
+                      pm1, pm25, pm4, pm10, tC, rH, voc, nox);
 
       // MQTT publish（オンライン時のみ）
-      if (mqttClient.connected()) publish_sen55(sen);
+      if (mqttClient.connected()) {
+        publish_sen55(pm1, pm25, pm4, pm10, rH, tC, voc, nox);
+      }
     }
   }
 
@@ -296,36 +266,25 @@ void loop() {
     bool ready = false;
     uint16_t err = scd4x.getDataReadyStatus(ready);
     
-    // データ未準備 or I2Cエラー
     if (err) {
         char em[64]; errorToString(err, em, sizeof(em));
         Serial.print("SCD40 dataReadyCheck error: "); Serial.println(em);
-        scd.valid = false; // ★ヘルスチェック用に失敗を記録
     } 
-    // データ準備完了
     else if (ready) {
+      // データ準備完了、読み取り試行
       uint16_t co2; float tC, rH;
       err = scd4x.readMeasurement(co2, tC, rH);
       if (err) {
         char em[64]; errorToString(err, em, sizeof(em));
         Serial.print("SCD40 read error: "); Serial.println(em);
-        scd.valid = false; // ★ヘルスチェック用に失敗を記録
       } else if (co2 != 0) {
-        scd.valid = true; // ★ヘルスチェック用に成功を記録
-        scd.co2 = co2; scd.temp = tC; scd.hum = rH;
-
-        Serial.printf("CO2=%uppm  Temp=%.2fC  Hum=%.2f%%RH\n", scd.co2, scd.temp, scd.hum);
-
-        if (mqttClient.connected()) publish_scd40(scd.co2, scd.temp, scd.hum);
-      } else {
-        // CO2=0 はセンサ起動直後の無効値
-        scd.valid = false;
+        // 読み取り成功 (CO2=0 は起動直後の無効値)
+        Serial.printf("CO2=%uppm  Temp=%.2fC  Hum=%.2f%%RH\n", co2, tC, rH);
+        if (mqttClient.connected()) {
+          publish_scd40(co2, tC, rH);
+        }
       }
     }
-    // else {
-    //   // データがまだ準備できていない（正常動作）
-    //   // scd.valid は変更しない
-    // }
   }
 
   M5.update();
