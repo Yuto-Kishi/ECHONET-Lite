@@ -6,7 +6,7 @@ body {
     padding: 20px;
     box-sizing: border-box;
     padding-top: 50px;
-    /* ★ ヘッダー（時計）のためのスペース */
+    /* ヘッダー（時計）のためのスペース */
 }
 
 h1 {
@@ -98,7 +98,7 @@ h1 {
     flex-wrap: nowrap;
     /* 折り返さない */
     justify-content: center;
-    gap: 5px;
+    gap: 10px;
     /* 隙間を 10px に縮小 */
     margin: 0 auto 30px auto;
     max-width: 900px;
@@ -111,7 +111,7 @@ h1 {
 .aq-box {
     background-color: #ffffff;
     border-radius: 8px;
-    padding: 7px 12px;
+    padding: 10px 15px;
     /* 余白を 10px 15px に縮小 */
     min-width: 110px;
     /* 最小幅を 110px に縮小 */
@@ -151,31 +151,10 @@ h1 {
 }
 
 
-/* --- チャート用スタイル --- */
-
-#chart-container {
-    display: flex;
-    flex-wrap: wrap;
-    /* 折り返しあり */
-    gap: 20px;
-    justify-content: center;
-    max-width: 900px;
-    margin: 0 auto 30px auto;
-}
-
-.chart-box {
-    width: calc(33.33% - 14px);
-    /* 3列に並ぶよう幅を調整 */
-    min-width: 250px;
-    /* 最小幅 */
-    background: #fff;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
+/* ★ グラフ用スタイルを削除 ★ */
 
 
-/* ★★★ リアルタイム時計 (ここから追加) ★★★ */
+/* --- リアルタイム時計 --- */
 
 #realtime-clock {
     position: fixed;
@@ -193,6 +172,3 @@ h1 {
     z-index: 1000;
     /* 他の要素より手前に表示 */
 }
-
-
-/* ★★★ (ここまで追加) ★★★ */
