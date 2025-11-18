@@ -15,7 +15,7 @@ MQTT_PORT = 7883
 CID = "53965d6805152d95"
 
 # ===== Device ID =====
-DEV_ID = "PIR7"   # PIRセンサーごとに個別設定
+DEV_ID = "PIR18"   # PIRセンサーごとに個別設定
 
 # ===== Pins =====
 # GP18 (物理ピン24) を使用
