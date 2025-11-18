@@ -15,7 +15,7 @@ INTERVAL_SECONDS = 60
 CSV_FILENAME = "co2_log.csv"
 
 # 認証情報 (Bearer Token)
-API_TOKEN = "2daff9d398fbeefd36b2670e"
+API_TOKEN = ""
 HEADERS = {"Authorization": f"Bearer {API_TOKEN}"}
 
 # --- ここから下は変更不要 ---
