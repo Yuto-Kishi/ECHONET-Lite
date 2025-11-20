@@ -9,8 +9,9 @@ CID = "53965d6805152d95"
 
 # ★★★ ここを確認！ ★★★
 # マイコン側で設定したデバイスIDと「完全に同じ」にしてください。
-# "PIR18" なのか "pir18" なのか注意してください。
-DEVICE_TO_CHECK = "PIR5"
+# "PIR18" なのか "pir18" なの
+# か注意してください。
+DEVICE_TO_CHECK = "PIR8"
 
 # トピックを作成 (/server/CID/PIR18/#)
 TOPIC_TO_SUBSCRIBE = f"/server/{CID}/{DEVICE_TO_CHECK}/#"

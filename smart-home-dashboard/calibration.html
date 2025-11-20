@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>座標調整ツール</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            background: #eee;
+            padding: 20px;
+        }
+        
+        h2 {
+            margin: 10px 0;
+        }
+        
+        .editor-area {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .canvas-container {
+            position: relative;
+            border: 2px solid #333;
+            background: white;
+            cursor: crosshair;
+            user-select: none;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .bg-image {
+            display: block;
+            width: 800px;
+            /* 作業しやすい固定幅 */
+            height: auto;
+            pointer-events: none;
+        }
+        /* 描画されるボックス */
+        
+        .drawn-box {
+            position: absolute;
+            border: 2px solid red;
+            background: rgba(255, 0, 0, 0.3);
+            color: red;
+            font-weight: bold;
+            font-size: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            pointer-events: none;
+            /* クリック透過 */
+        }
+        /* コントロールパネル */
+        
+        .controls {
+            width: 300px;
+            text-align: left;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 20px;
+        }
+        
+        .zone-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+        }
+        
+        .zone-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .zone-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .zone-item.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .zone-item.done {
+            text-decoration: line-through;
+            color: #888;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .btn-blue {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        
+        .btn-green {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        
+        .toggle-floor {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="toggle-floor">
+        <button class="btn-blue" style="width:auto;" onclick="setFloor(1)">1F (floor1.png) を編集</button>
+        <button class="btn-blue" style="width:auto;" onclick="setFloor(2)">2F (floor2.png) を編集</button>
+    </div>
+
+    <div class="editor-area">
+        <div class="canvas-container" id="canvas-container" onmousedown="startDraw(event)">
+            <img id="target-image" class="bg-image" src="floor1.png">
+            <div id="overlay-layer"></div>
+        </div>
+
+        <div class="controls">
+            <h3>1. エリアを選択</h3>
+            <ul class="zone-list" id="zone-list"></ul>
+            <p><small>画像上で「左上」から「右下」へドラッグして範囲を決めてください。</small></p>
+
+            <h3>2. コード生成</h3>
+            <button class="btn-green" onclick="generateCode()">コードを表示</button>
+            <textarea id="output-code" readonly placeholder="ここにコードが生成されます..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        // === 設定データ ===
+        const zones1F = [{
+            id: 'living-grid-overlay',
+            name: 'リビング9分割枠 (PIR1-4)',
+            class: ''
+        }, {
+            id: 'zone-kitchen',
+            name: '台所 (PIR18)',
+            class: 'room-zone zone-purple'
+        }, {
+            id: 'zone-entrance',
+            name: '玄関 (PIR13)',
+            class: 'room-zone zone-peach'
+        }, {
+            id: 'zone-toilet1',
+            name: 'トイレ1 (PIR11)',
+            class: 'room-zone zone-blue'
+        }, {
+            id: 'zone-washroom',
+            name: '洗面所 (PIR5)',
+            class: 'room-zone zone-green'
+        }, {
+            id: 'zone-japanese-n',
+            name: '和室・北 (PIR21)',
+            class: 'room-zone zone-orange'
+        }, {
+            id: 'zone-japanese-s',
+            name: '床の間 (PIR17)',
+            class: 'room-zone zone-grey'
+        }];
+        const zones2F = [{
+            id: 'zone-spare',
+            name: '予備室 (PIR6+9)',
+            class: 'room-zone zone-purple'
+        }, {
+            id: 'zone-toilet2',
+            name: 'トイレ2 (PIR20)',
+            class: 'room-zone zone-blue'
+        }, {
+            id: 'zone-western2',
+            name: '洋室2 (PIR19+24)',
+            class: 'room-zone zone-green'
+        }, {
+            id: 'zone-bed-l',
+            name: '寝室左 (PIR22)',
+            class: 'room-zone zone-peach'
+        }, {
+            id: 'zone-bed-r',
+            name: '寝室右 (PIR8)',
+            class: 'room-zone zone-grey'
+        }, {
+            id: 'zone-western1',
+            name: '洋室1 (PIR10+15)',
+            class: 'room-zone zone-yellow'
+        }];
+
+        let currentFloor = 1;
+        let currentZoneIndex = -1;
+        let results = {}; // { "zone-id": {top, left, width, height} }
+
+        // ドラッグ状態
+        let isDrawing = false;
+        let startX, startY;
+        let tempBox = null;
+
+        function setFloor(floor) {
+            currentFloor = floor;
+            document.getElementById('target-image').src = `floor${floor}.png`;
+            document.getElementById('overlay-layer').innerHTML = ''; // クリア
+            results = {};
+            renderList();
+        }
+
+        function renderList() {
+            const list = document.getElementById('zone-list');
+            list.innerHTML = '';
+            const zones = currentFloor === 1 ? zones1F : zones2F;
+
+            zones.forEach((z, index) => {
+                const li = document.createElement('li');
+                li.className = 'zone-item';
+                li.textContent = z.name;
+                li.onclick = () => selectZone(index);
+                if (index === currentZoneIndex) li.classList.add('active');
+                if (results[z.id]) {
+                    li.classList.add('done');
+                    li.textContent += ' (完了)';
+                }
+                list.appendChild(li);
+            });
+        }
+
+        function selectZone(index) {
+            currentZoneIndex = index;
+            renderList();
+        }
+
+        // --- マウス操作 ---
+        function startDraw(e) {
+            if (currentZoneIndex === -1) {
+                alert("右のリストからエリアを選択してください");
+                return;
+            }
+            isDrawing = true;
+            const rect = document.getElementById('canvas-container').getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+
+            // 仮ボックス作成
+            if (tempBox) tempBox.remove();
+            tempBox = document.createElement('div');
+            tempBox.className = 'drawn-box';
+            tempBox.style.left = startX + 'px';
+            tempBox.style.top = startY + 'px';
+            document.getElementById('overlay-layer').appendChild(tempBox);
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        }
+
+        function onMove(e) {
+            if (!isDrawing) return;
+            const rect = document.getElementById('canvas-container').getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+
+            const width = Math.abs(currentX - startX);
+            const height = Math.abs(currentY - startY);
+            const left = Math.min(currentX, startX);
+            const top = Math.min(currentY, startY);
+
+            tempBox.style.width = width + 'px';
+            tempBox.style.height = height + 'px';
+            tempBox.style.left = left + 'px';
+            tempBox.style.top = top + 'px';
+        }
+
+        function onUp(e) {
+            isDrawing = false;
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+
+            // 座標確定 (パーセント変換)
+            const container = document.getElementById('canvas-container');
+            const w = container.offsetWidth; // ボーダー除く幅には注意だが簡易的に
+            const h = container.offsetHeight;
+
+            const boxRect = tempBox.getBoundingClientRect();
+            const contRect = container.getBoundingClientRect();
+
+            // コンテナに対する相対座標
+            const finalLeft = boxRect.left - contRect.left;
+            const finalTop = boxRect.top - contRect.top;
+
+            // %計算 (小数点1桁)
+            const pLeft = (finalLeft / w * 100).toFixed(1);
+            const pTop = (finalTop / h * 100).toFixed(1);
+            const pWidth = (boxRect.width / w * 100).toFixed(1);
+            const pHeight = (boxRect.height / h * 100).toFixed(1);
+
+            // 保存
+            const zones = currentFloor === 1 ? zones1F : zones2F;
+            const zoneId = zones[currentZoneIndex].id;
+            results[zoneId] = {
+                top: pTop,
+                left: pLeft,
+                width: pWidth,
+                height: pHeight
+            };
+
+            // ボックスを確定表示に変更
+            tempBox.innerText = zones[currentZoneIndex].name;
+            tempBox.id = `box-${zoneId}`;
+            tempBox = null;
+
+            renderList();
+
+            // 次の項目を自動選択
+            if (currentZoneIndex < zones.length - 1) {
+                selectZone(currentZoneIndex + 1);
+            }
+        }
+
+        function generateCode() {
+            const zones = currentFloor === 1 ? zones1F : zones2F;
+            let html = `\n`;
+
+            zones.forEach(z => {
+                const r = results[z.id];
+                if (!r) return;
+
+                if (z.id === 'living-grid-overlay') {
+                    // リビンググリッドの場合
+                    html += `
+        <div id="living-grid-overlay" style="position: absolute; top: ${r.top}%; left: ${r.left}%; width: ${r.width}%; height: ${r.height}%;">
+            <div class="zone-grid">
+                <div id="zone-north-west" class="zone">NW<br>(PIR2)</div>
+                <div id="zone-north" class="zone">North</div>
+                <div id="zone-north-east" class="zone">NE<br>(PIR1)</div>
+                <div id="zone-west" class="zone">West</div>
+                <div id="zone-center" class="zone">食堂<br>居間</div> 
+                <div id="zone-east" class="zone">East</div>
+                <div id="zone-south-west" class="zone">SW<br>(PIR4)</div>
+                <div id="zone-south" class="zone">South</div>
+                <div id="zone-south-east" class="zone">SE<br>(PIR3)</div>
+            </div>
+        </div>\n`;
+                } else {
+                    // 通常の部屋の場合
+                    // ラベル用テキスト（改行タグ込み）
+                    const label = z.name.replace(' ', '<br>');
+                    html += `
+        <div id="${z.id}" class="${z.class}" 
+             style="top: ${r.top}%; left: ${r.left}%; width: ${r.width}%; height: ${r.height}%;">
+             ${label}
+        </div>\n`;
+                }
+            });
+
+            document.getElementById('output-code').value = html;
+        }
+
+        // 初期化
+        setFloor(1);
+    </script>
+</body>
+
+</html>

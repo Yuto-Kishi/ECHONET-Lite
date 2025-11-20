@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全館 リアルタイム在室状況</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="realtime-clock"></div>
+
+    <h1 id="main-title">全館 リアルタイム在室状況</h1>
+
+    <div class="floor-nav">
+        <a href="#floor-1f">1F (リビング・台所)</a>
+        <a href="#floor-2f">2F (寝室・洋室)</a>
+    </div>
+
+    <h2 id="floor-1f" class="floor-title">1F</h2>
+    <div class="room-container">
+        <img src="floor1.png" alt="1F間取り図" class="background-image">
+
+        <div id="living-grid-overlay" style="position: absolute; top: 44.5%; left: 2.7%; width: 54.4%; height: 48.7%;">
+            <div class="zone-grid">
+                <div id="zone-north-west" class="zone">NW<br>(PIR2)</div>
+                <div id="zone-north" class="zone">North</div>
+                <div id="zone-north-east" class="zone">NE<br>(PIR1)</div>
+                <div id="zone-west" class="zone">West</div>
+                <div id="zone-center" class="zone">食堂<br>居間</div>
+                <div id="zone-east" class="zone">East</div>
+                <div id="zone-south-west" class="zone">SW<br>(PIR4)</div>
+                <div id="zone-south" class="zone">South</div>
+                <div id="zone-south-east" class="zone">SE<br>(PIR3)</div>
+            </div>
+        </div>
+
+        <div id="zone-kitchen" class="room-zone zone-purple" style="top: 5.0%; left: 2.6%; width: 23.8%; height: 37.8%;">
+            台所<br>(PIR18)
+        </div>
+        <div id="zone-entrance" class="room-zone zone-peach" style="top: 5.3%; left: 28.2%; width: 18.5%; height: 28.0%;">
+            玄関<br>(PIR13)
+        </div>
+        <div id="zone-toilet1" class="room-zone zone-blue" style="top: 4.7%; left: 58.7%; width: 8.6%; height: 21.3%;">
+            トイレ1<br>(PIR11)
+        </div>
+        <div id="zone-washroom" class="room-zone zone-green" style="top: 5.3%; left: 69.3%; width: 28.6%; height: 20.7%;">
+            洗面所<br>(PIR5)
+        </div>
+        <div id="zone-japanese-n" class="room-zone zone-orange" style="top: 49.7%; left: 58.7%; width: 28.7%; height: 21.8%;">
+            和室・北<br>(PIR21)
+        </div>
+        <div id="zone-japanese-s" class="room-zone zone-grey" style="top: 72.2%; left: 58.8%; width: 39.2%; height: 21.1%;">
+            床の間<br>(PIR17)
+        </div>
+    </div>
+
+    <h2 id="floor-2f" class="floor-title">2F</h2>
+    <div class="room-container">
+        <img src="floor2.png" alt="2F間取り図" class="background-image">
+
+        <div id="zone-spare" class="room-zone zone-purple" style="top: 5.2%; left: 2.7%; width: 33.3%; height: 37.0%;">
+            予備室<br>(PIR6+9)
+        </div>
+        <div id="zone-toilet2" class="room-zone zone-blue" style="top: 5.1%; left: 38.3%; width: 8.6%; height: 22.2%;">
+            トイレ2<br>(PIR20)
+        </div>
+        <div id="zone-western2" class="room-zone zone-green" style="top: 5.4%; left: 68.8%; width: 29.0%; height: 42.9%;">
+            洋室2<br>(PIR19+24)
+        </div>
+        <div id="zone-bed-l" class="room-zone zone-peach" style="top: 55.0%; left: 2.7%; width: 29.5%; height: 37.4%;">
+            寝室左<br>(PIR22)
+        </div>
+        <div id="zone-bed-r" class="room-zone zone-grey" style="top: 55.3%; left: 32.3%; width: 24.5%; height: 37.1%;">
+            寝室右<br>(PIR8)
+        </div>
+        <div id="zone-western1" class="room-zone zone-yellow" style="top: 60.7%; left: 58.8%; width: 39.1%; height: 32.0%;">
+            洋室1<br>(PIR10+15)
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
