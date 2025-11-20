@@ -16,7 +16,7 @@ CSV_FILENAME = "temperature_log.csv"
 
 # ★★★ ここに認証情報を追加 ★★★
 # ユーザーから提供されたBearer Token
-API_TOKEN = "2daff9d398fbeefd36b2670e"
+API_TOKEN = ""
 HEADERS = {"Authorization": f"Bearer {API_TOKEN}"}
 # ★★★ ここまで ★★★
 
