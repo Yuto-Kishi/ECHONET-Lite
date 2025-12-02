@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>空気清浄機 データ受信テスト</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #222;
+            color: #0f0;
+        }
+        
+        h1 {
+            color: #fff;
+            border-bottom: 1px solid #555;
+        }
+        
+        #log {
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+        
+        .entry {
+            margin-bottom: 10px;
+            border-bottom: 1px dashed #444;
+            padding-bottom: 5px;
+        }
+        
+        .time {
+            color: #888;
+        }
+        
+        .id {
+            color: #f0f;
+            font-weight: bold;
+        }
+        
+        .val {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>空気清浄機 データ受信ログ</h1>
+    <div>ステータス: <span id="status">接続中...</span></div>
+    <div id="log">データ受信を待機しています...</div>
+
+    <script>
+        const WS_URL = 'ws://localhost:8080';
+        const statusEl = document.getElementById('status');
+        const logEl = document.getElementById('log');
+
+        const socket = new WebSocket(WS_URL);
+
+        socket.onopen = () => {
+            statusEl.innerText = "✅ WebSocket接続成功";
+            statusEl.style.color = "#0f0";
+        };
+
+        socket.onclose = () => {
+            statusEl.innerText = "❌ 切断されました (server.jsは動いていますか？)";
+            statusEl.style.color = "#f00";
+        };
+
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+
+                // ★ 全データを表示したい場合はこのif文を削除してください
+                // ここでは「家電データ（空気清浄機など）」だけを表示します
+                if (data.type === 'appliance_data') {
+
+                    const time = new Date().toLocaleTimeString();
+                    const entry = document.createElement('div');
+                    entry.className = 'entry';
+
+                    // データの見やすい表示
+                    let valueStr = JSON.stringify(data.value, null, 2); // 整形
+
+                    entry.innerHTML = `
+                        <span class="time">[${time}]</span> 
+                        <span class="id">ID: ${data.deviceId}</span> 
+                        プロパティ: ${data.property}
+                        <div class="val">${valueStr}</div>
+                    `;
+
+                    // 新しいものを上に追加
+                    logEl.prepend(entry);
+                }
+
+            } catch (e) {
+                console.error(e);
+            }
+        };
+    </script>
+</body>
+
+</html>
