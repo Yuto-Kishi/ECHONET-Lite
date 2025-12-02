@@ -7,75 +7,152 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) el.innerText = "JST " + now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
     }, 1000);
 
-    const sensorState = {};
+    const latestEnvData = {};
+    const applianceData = {};
+    let activePIRId = null;
+    let activeAppId = null;
 
-    // 1. リビング (9分割)
-    const livingZones = {
-        'north-west': document.getElementById('zone-north-west'),
-        'north': document.getElementById('zone-north'),
-        'north-east': document.getElementById('zone-north-east'),
-        'west': document.getElementById('zone-west'),
-        'center': document.getElementById('zone-center'),
-        'east': document.getElementById('zone-east'),
-        'south-west': document.getElementById('zone-south-west'),
-        'south': document.getElementById('zone-south'),
-        'south-east': document.getElementById('zone-south-east')
+    const sensorToEnvMap = {
+        'PIR1': 'M5Stack2',
+        'PIR2': 'M5Stack2',
+        'PIR3': 'M5Stack2',
+        'PIR4': 'M5Stack2',
+        'PIR18': 'M5Stack8',
+        'PIR5': 'M5Stack3',
+        'PIR21': 'M5Stack1',
+        'PIR17': 'M5Stack1',
+        'PIR6': 'M5Stack4',
+        'PIR9': 'M5Stack4',
+        'PIR19': 'M5Stack5',
+        'PIR24': 'M5Stack5',
+        'PIR22': 'M5Stack6',
+        'PIR8': 'M5Stack6',
+        'PIR15': 'M5Stack10',
+        'PIR10': 'M5Stack10'
     };
 
-    function updateLivingGrid() {
-        Object.values(livingZones).forEach(z => z && z.classList.remove('active'));
-        const p1 = sensorState['PIR1'],
-            p2 = sensorState['PIR2'];
-        const p3 = sensorState['PIR3'],
-            p4 = sensorState['PIR4'];
+    const tooltip = document.getElementById('env-tooltip');
 
-        if (p2 && !p1 && !p4) livingZones['north-west'].classList.add('active');
-        if (p1 && !p2 && !p3) livingZones['north-east'].classList.add('active');
-        if (p4 && !p2 && !p3) livingZones['south-west'].classList.add('active');
-        if (p3 && !p1 && !p4) livingZones['south-east'].classList.add('active');
-
-        if (p2 && p1) livingZones['north'].classList.add('active');
-        if (p2 && p4) livingZones['west'].classList.add('active');
-        if (p1 && p3) livingZones['east'].classList.add('active');
-        if (p4 && p3) livingZones['south'].classList.add('active');
-        if ((p1 && p4) || (p2 && p3)) livingZones['center'].classList.add('active');
+    function showTooltip(title, contentHTML) {
+        let html = `<div style="border-bottom:2px solid #888; margin-bottom:5px; color:#555; font-size:1.1em; font-weight:bold;">${title}</div>`;
+        html += contentHTML;
+        tooltip.innerHTML = html;
+        tooltip.style.display = 'block';
     }
 
-    // 2. その他の部屋
-    const roomMapping = {
-        'zone-kitchen': ['PIR18'],
-        'zone-entrance': ['PIR13'],
-        'zone-toilet1': ['PIR11'],
-        'zone-washroom': ['PIR5'],
-        'zone-japanese-n': ['PIR21'],
-        'zone-japanese-s': ['PIR17'],
-        'zone-spare': ['PIR6', 'PIR9'],
-        'zone-toilet2': ['PIR20'],
-        'zone-western2': ['PIR19', 'PIR24'],
-        'zone-bed-l': ['PIR22'],
-        'zone-bed-r': ['PIR8'],
-        'zone-western1': ['PIR10', 'PIR15']
-    };
-
-    function updateRooms() {
-        for (const [roomId, sensors] of Object.entries(roomMapping)) {
-            const roomEl = document.getElementById(roomId);
-            if (!roomEl) continue;
-            const isActive = sensors.some(id => sensorState[id] === true);
-            if (isActive) roomEl.classList.add('active');
-            else roomEl.classList.remove('active');
+    function renderEnvTooltip(pirId) {
+        const envId = sensorToEnvMap[pirId];
+        if (!envId) return;
+        const data = latestEnvData[envId];
+        let body = "";
+        if (!data || Object.keys(data).length === 0) {
+            body = `<div style="color:#999;">データ受信待ち...</div>`;
+        } else {
+            if (data.temp) body += `<div class="tooltip-row"><span class="tooltip-label">温度</span><span class="tooltip-val">${data.temp}℃</span></div>`;
+            if (data.hum) body += `<div class="tooltip-row"><span class="tooltip-label">湿度</span><span class="tooltip-val">${data.hum}%</span></div>`;
+            if (data.co2) body += `<div class="tooltip-row"><span class="tooltip-label">CO2</span><span class="tooltip-val">${data.co2}ppm</span></div>`;
+            if (data.voc) body += `<div class="tooltip-row"><span class="tooltip-label">VOC</span><span class="tooltip-val">${data.voc}</span></div>`;
+            if (data.pm25) body += `<div class="tooltip-row"><span class="tooltip-label">PM2.5</span><span class="tooltip-val">${data.pm25}µg</span></div>`;
         }
+        showTooltip(envId, body);
     }
+
+    function renderAppTooltip(appId) {
+        const data = applianceData[appId] || {};
+        let body = "";
+
+        if (Object.keys(data).length === 0) {
+            body = `<div style="color:#999;">データ受信待ち...</div>`;
+        } else {
+            if (data.operationStatus !== undefined) {
+                const opStatus = data.operationStatus ? '<span style="color:#28a745;">ON</span>' : '<span style="color:#aaa;">OFF</span>';
+                body += `<div class="tooltip-row"><span class="tooltip-label">電源</span><span class="tooltip-val">${opStatus}</span></div>`;
+            }
+            const temp = data.temperature || data.roomTemperature;
+            if (temp !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">室温</span><span class="tooltip-val">${temp}℃</span></div>`;
+            if (data.humidity !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">湿度</span><span class="tooltip-val">${data.humidity}%</span></div>`;
+            if (data.pm25 !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">PM2.5</span><span class="tooltip-val">${data.pm25}µg</span></div>`;
+            if (data.gasContaminationValue !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">ガス</span><span class="tooltip-val">${data.gasContaminationValue}</span></div>`;
+            if (data.setTemperature !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">設定</span><span class="tooltip-val">${data.setTemperature}℃</span></div>`;
+        }
+        showTooltip(appId, body);
+    }
+
+    document.querySelectorAll('.pir-dot').forEach(dot => {
+        const pirId = dot.id.replace('dot-', '');
+        dot.addEventListener('mouseenter', () => {
+            if (sensorToEnvMap[pirId]) { activePIRId = pirId;
+                renderEnvTooltip(pirId); }
+        });
+        dot.addEventListener('mousemove', (e) => {
+            if (activePIRId) { tooltip.style.top = (e.clientY + 15) + 'px';
+                tooltip.style.left = (e.clientX + 15) + 'px'; }
+        });
+        dot.addEventListener('mouseleave', () => { activePIRId = null;
+            tooltip.style.display = 'none'; });
+    });
+
+    document.querySelectorAll('.appliance-icon').forEach(icon => {
+        const appId = icon.id.replace('app-', '');
+        icon.addEventListener('mouseenter', () => {
+            activeAppId = appId;
+            renderAppTooltip(appId);
+        });
+        icon.addEventListener('mousemove', (e) => {
+            tooltip.style.top = (e.clientY + 15) + 'px';
+            tooltip.style.left = (e.clientX + 15) + 'px';
+        });
+        icon.addEventListener('mouseleave', () => { activeAppId = null;
+            tooltip.style.display = 'none'; });
+    });
 
     const socket = new WebSocket(WS_URL);
     socket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
+
             if (data.type === 'pir_presence') {
-                sensorState[data.sensor] = data.state;
-                updateLivingGrid();
-                updateRooms();
+                const dot = document.getElementById(`dot-${data.sensor}`);
+                if (dot) data.state ? dot.classList.add('active') : dot.classList.remove('active');
+            } else if (data.type === 'air_quality') {
+                if (data.sensor) updateEnvData(data.sensor, data.property, data.value);
+            } else if (data.type === 'appliance_data') {
+                if (!applianceData[data.deviceId]) applianceData[data.deviceId] = {};
+
+                // customF1 (オブジェクト) の場合は中身を展開
+                if (data.property === 'customF1' && typeof data.value === 'object') {
+                    Object.assign(applianceData[data.deviceId], data.value);
+                } else {
+                    applianceData[data.deviceId][data.property] = data.value;
+                }
+
+                // アイコン点灯
+                if (data.property === 'operationStatus' || applianceData[data.deviceId].operationStatus !== undefined) {
+                    const icon = document.getElementById(`app-${data.deviceId}`);
+                    if (icon) {
+                        const isOn = applianceData[data.deviceId].operationStatus;
+                        isOn ? icon.classList.add('active') : icon.classList.remove('active');
+                    }
+                }
+
+                if (activeAppId === data.deviceId) renderAppTooltip(activeAppId);
             }
         } catch (e) { console.error(e); }
     };
+
+    function updateEnvData(deviceId, property, value) {
+        if (!latestEnvData[deviceId]) latestEnvData[deviceId] = {};
+        let type = '';
+        if (property.includes('co2')) type = 'co2';
+        else if (property.includes('temp')) type = 'temp';
+        else if (property.includes('hum')) type = 'hum';
+        else if (property.includes('pm2_5')) type = 'pm25';
+        else if (property.includes('voc')) type = 'voc';
+
+        if (type) {
+            const val = (typeof value === 'number') ? value.toFixed(type === 'co2' || type === 'voc' ? 0 : 1) : value;
+            latestEnvData[deviceId][type] = val;
+            if (activePIRId && sensorToEnvMap[activePIRId] === deviceId) renderEnvTooltip(activePIRId);
+        }
+    }
 });

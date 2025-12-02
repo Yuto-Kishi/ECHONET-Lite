@@ -9,14 +9,24 @@ const CID = '53965d6805152d95';
 const HTTP_PORT = 3001;
 const WS_PORT = 8080;
 
-// ★ 監視対象デバイス (PIRのみ)
+// ★ 監視対象デバイス
 const DEVICES = [
-    // 1F Living (9分割用)
-    'PIR1', 'PIR2', 'PIR3', 'PIR4',
-    // 1F Others
-    'PIR18', 'PIR13', 'PIR11', 'PIR5', 'PIR21', 'PIR17',
-    // 2F
-    'PIR6', 'PIR9', 'PIR20', 'PIR19', 'PIR24', 'PIR22', 'PIR8', 'PIR10', 'PIR15'
+    // 1F PIR
+    'PIR1', 'PIR2', 'PIR3', 'PIR4', 'PIR5', 'PIR11', 'PIR13', 'PIR17', 'PIR18', 'PIR21',
+    // 2F PIR
+    'PIR6', 'PIR8', 'PIR9', 'PIR10', 'PIR15', 'PIR19', 'PIR20', 'PIR22', 'PIR24',
+    // M5Stack
+    'M5Stack1', 'M5Stack2', 'M5Stack3', 'M5Stack4', 'M5Stack5', 'M5Stack6', 'M5Stack8', 'M5Stack10',
+
+    // ★★★ 空気清浄機 (8台) ★★★
+    'C0A80344-013501', // 洋室1
+    'C0A80342-013501', // 洋室2
+    'C0A80343-013501', // 主寝室
+    'C0A80341-013501', // 和室
+    'C0A8033C-013501', // 2Fホール
+    'C0A8033E-013501', // 浴室洗面台
+    'C0A8033D-013501', // 予備室
+    'C0A8033B-013501' // リビング
 ];
 
 // --- サーバーセットアップ ---
@@ -58,16 +68,44 @@ mqttClient.on('message', (topic, payload) => {
 
         const data = JSON.parse(payload.toString());
 
-        // PIRセンサーの処理のみ
+        // PIRセンサー
         if (deviceId.startsWith('PIR')) {
             if (propertyName === 'motion' || propertyName === 'motion_raw') {
-                // motion_raw または motion のどちらかを受信したら送る
                 const state = (propertyName === 'motion_raw' ? data.motion_raw : data.motion);
+                broadcast({ type: 'pir_presence', sensor: deviceId, state: state });
+            }
+        }
+        // M5Stack
+        else if (deviceId.startsWith('M5Stack')) {
+            const value = data[propertyName];
+            if (value !== undefined) {
+                broadcast({ type: 'air_quality', sensor: deviceId, property: propertyName, value: value });
+            }
+        }
+        // ★★★ 家電データ (空気清浄機など) ★★★
+        else {
+            // 1. データの取り出しを強化
+            let value = data[propertyName];
 
+            // もし data["customF1"] が undefined なら、data そのものが中身である可能性が高い
+            if (value === undefined) {
+                value = data;
+            }
+
+            // 2. ログを出力 (サーバーが動いているか確認するため)
+            // 空気清浄機からのデータならコンソールに表示
+            if (deviceId.includes('013501')) {
+                console.log(`[空気清浄機 受信] ID:${deviceId} Prop:${propertyName}`);
+                // console.log(JSON.stringify(value)); // 詳細が見たい場合はここを解除
+            }
+
+            // 3. 必ずブラウザへ送信
+            if (value !== undefined) {
                 broadcast({
-                    type: 'pir_presence',
-                    sensor: deviceId,
-                    state: state
+                    type: 'appliance_data',
+                    deviceId: deviceId,
+                    property: propertyName,
+                    value: value
                 });
             }
         }

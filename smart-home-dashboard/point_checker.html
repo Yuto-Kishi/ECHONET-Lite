@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIR座標特定ツール (スクロール版)</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            background-color: #333;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            padding-bottom: 200px;
+            /* 下部に余白 */
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        
+        h2 {
+            margin-top: 40px;
+            margin-bottom: 10px;
+            color: #ddd;
+            border-bottom: 1px solid #555;
+            display: inline-block;
+        }
+        /* ★ アプリと同じ表示条件 ★ */
+        
+        .room-container {
+            position: relative;
+            width: 95vw;
+            max-width: 900px;
+            margin: 0 auto;
+            border: 2px solid #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            cursor: crosshair;
+            /* 十字カーソル */
+        }
+        
+        .background-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            opacity: 1.0;
+            pointer-events: none;
+        }
+        /* マーカー（クリック位置） */
+        
+        .marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: rgba(255, 0, 124, 0.8);
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+        /* 結果表示エリア (画面下に固定) */
+        
+        .result-box {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            width: 90%;
+            max-width: 600px;
+            z-index: 200;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            text-align: left;
+        }
+        
+        .result-label {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .code-output {
+            font-family: monospace;
+            font-size: 1.2em;
+            color: #0f0;
+            background: #222;
+            padding: 10px;
+            border: 1px solid #444;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>座標特定ツール</h1>
+    <p>画像をクリックすると、その場所の座標コードがコピーされます。</p>
+
+    <h2>1F 平面図</h2>
+    <div class="room-container" id="container-1f" onclick="getCoordinates(event, 'container-1f')">
+        <img src="floor1.png" class="background-image">
+        <div id="marker-1f" class="marker"></div>
+    </div>
+
+    <h2>2F 平面図</h2>
+    <div class="room-container" id="container-2f" onclick="getCoordinates(event, 'container-2f')">
+        <img src="floor2.png" class="background-image">
+        <div id="marker-2f" class="marker"></div>
+    </div>
+
+    <div class="result-box">
+        <div class="result-label">クリックした位置のコード (自動コピー済):</div>
+        <input type="text" id="output" class="code-output" readonly value="マップをクリックしてください">
+    </div>
+
+    <script>
+        function getCoordinates(e, containerId) {
+            const container = document.getElementById(containerId);
+            const rect = container.getBoundingClientRect();
+
+            // コンテナ内でのクリック座標 (px)
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // パーセントに変換 (小数点1桁)
+            // これにより、画像のサイズが変わっても位置がズレません
+            const left = ((x / rect.width) * 100).toFixed(1);
+            const top = ((y / rect.height) * 100).toFixed(1);
+
+            // 対応するマーカーを表示・移動
+            // (1Fをクリックしたら1Fのマーカーだけ動かす)
+            const markerId = containerId === 'container-1f' ? 'marker-1f' : 'marker-2f';
+            const otherMarkerId = containerId === 'container-1f' ? 'marker-2f' : 'marker-1f';
+
+            const marker = document.getElementById(markerId);
+            marker.style.left = left + '%';
+            marker.style.top = top + '%';
+            marker.style.display = 'block';
+
+            // もう片方のマーカーは消す（紛らわしいので）
+            document.getElementById(otherMarkerId).style.display = 'none';
+
+            // コード生成
+            const code = `style="top: ${top}%; left: ${left}%;"`;
+
+            // 表示とコピー
+            const output = document.getElementById('output');
+            output.value = code;
+            output.select();
+            document.execCommand('copy');
+
+            // フィードバック演出
+            output.style.backgroundColor = "#444";
+            setTimeout(() => {
+                output.style.backgroundColor = "#222";
+            }, 200);
+        }
+    </script>
+</body>
+
+</html>

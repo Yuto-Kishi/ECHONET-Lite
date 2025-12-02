@@ -1,6 +1,7 @@
 body {
     font-family: sans-serif;
-    background-color: #f4f4f9;
+    background-color: #222;
+    color: #eee;
     text-align: center;
     margin: 0;
     padding: 20px;
@@ -12,14 +13,14 @@ body {
 h1 {
     font-size: 2.0em;
     margin-bottom: 10px;
-    color: #333;
+    color: #fff;
 }
 
 .floor-title {
     font-size: 1.5em;
     margin: 40px 0 20px 0;
-    color: #555;
-    border-bottom: 2px solid #ddd;
+    color: #ccc;
+    border-bottom: 2px solid #555;
     display: inline-block;
     padding-bottom: 5px;
 }
@@ -37,8 +38,44 @@ h1 {
     background: rgba(255, 255, 255, 0.9);
     padding: 5px 15px;
     border-radius: 20px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
     z-index: 1000;
+}
+
+
+/* 凡例 */
+
+.legend-container {
+    margin-bottom: 20px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.legend-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: rgba(128, 0, 128, 0.6);
+    border: 2px solid #fff;
+}
+
+.legend-square {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background-color: rgba(50, 50, 50, 0.6);
+    border: 2px solid #aaa;
 }
 
 
@@ -52,7 +89,7 @@ h1 {
     display: inline-block;
     margin: 0 10px;
     padding: 8px 16px;
-    background: #af06f2;
+    background: #800080;
     color: white;
     text-decoration: none;
     border-radius: 20px;
@@ -62,7 +99,7 @@ h1 {
 }
 
 .floor-nav a:hover {
-    background: #9b01b6;
+    background: #ff1493;
 }
 
 
@@ -73,115 +110,116 @@ h1 {
     width: 95vw;
     max-width: 900px;
     margin: 0 auto 60px auto;
-    border: 2px solid #ddd;
+    border: 2px solid #555;
     border-radius: 8px;
     overflow: hidden;
-    background: white;
+    background: #fff;
 }
 
 .background-image {
     width: 100%;
     height: auto;
     display: block;
-    opacity: 0.5;
+    opacity: 0.7;
 }
 
 
-/* ==========================================================================
-   ★ デザイン統一: 食堂・居間 (9分割) と その他の部屋 (1F/2F) を共通化
-   ========================================================================== */
+/* --- PIRセンサー (丸ポチ) --- */
+
+.pir-dot {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(128, 0, 128, 0.6);
+    /* パープル */
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    z-index: 5;
+}
+
+.pir-dot.active {
+    background-color: #ff1493 !important;
+    /* ピンク発光 */
+    border-color: #ff69b4 !important;
+    box-shadow: 0 0 20px 5px rgba(255, 20, 147, 0.8) !important;
+    z-index: 100;
+    transform: translate(-50%, -50%) scale(1.4);
+}
 
 
-/* --- 共通のスタイル定義 --- */
+/* --- 家電アイコン (四角) --- */
 
-
-/* 通常時: パープル枠、薄いパープル背景 */
-
-.zone,
-.room-zone {
+.appliance-icon {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    transform: translate(-50%, -50%);
+    background-color: rgba(50, 50, 50, 0.6);
+    /* 黒っぽい */
+    border: 2px solid #aaa;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     display: flex;
     justify-content: center;
     align-items: center;
-    text-align: center;
+    color: white;
+    font-size: 10px;
     font-weight: bold;
+    transition: all 0.3s ease-in-out;
+    cursor: pointer;
+    z-index: 6;
+}
+
+.appliance-icon.air.active {
+    background-color: #32cd32 !important;
+    /* 緑発光 */
+    border-color: #98fb98 !important;
+    box-shadow: 0 0 15px 3px rgba(50, 205, 50, 0.8) !important;
+}
+
+
+/* (もしエアコンがあれば .appliance-icon.ac.active { ... } も追加可) */
+
+
+/* ツールチップ */
+
+.tooltip {
+    position: fixed;
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #800080;
+    border-radius: 8px;
+    padding: 10px;
+    color: #333;
     font-size: 0.9em;
-    /* 枠線: パープル */
-    border: 2px solid #af06f2;
-    /* 文字色: パープル */
-    color: #8a2be2;
-    /* 背景: ごく薄いパープル */
-    background-color: rgba(126, 11, 203, 0.05);
-    transition: all 0.2s ease-in-out;
+    font-weight: bold;
+    line-height: 1.5;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    display: none;
+    z-index: 9999;
+    min-width: 160px;
+    text-align: left;
 }
 
-
-/* 反応時 (Active): ピンク発光 */
-
-.zone.active,
-.room-zone.active {
-    /* 背景: ピンク (半透明) */
-    background-color: rgba(255, 0, 166, 0.6) !important;
-    /* 文字: 白 */
-    color: white !important;
-    /* 枠線: 明るいピンク */
-    border-color: #ff00a6 !important;
-    /* 発光エフェクト */
-    box-shadow: 0 0 15px rgba(255, 0, 166, 0.8) !important;
-    z-index: 10;
-    /* 重なった時に手前に来るように */
+.tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 2px;
+    margin-bottom: 2px;
 }
 
-
-/* --- 以下、配置のための固有設定 --- */
-
-
-/* リビング用 9分割グリッドの枠組み */
-
-.zone-grid {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    grid-template-columns: 2fr 1fr 2fr;
-    grid-template-rows: repeat(3, 1fr);
-    /* グリッド自体の外枠は個々のセルに枠があるので不要なら削除、あるいは合わせる */
-    border-top: 2px solid #af06f2;
-    border-left: 2px solid #af06f2;
+.tooltip-label {
+    color: #666;
+    margin-right: 10px;
 }
 
-
-/* リビンググリッド内のセル固有の線 (二重線を防ぐ調整) */
-
-.zone {
-    border-right: 2px solid #af06f2;
-    border-bottom: 2px solid #af06f2;
-    border-top: none;
-    border-left: none;
-    /* グリッドコンテナに任せる */
-}
-
-
-/* その他の部屋 (絶対配置) */
-
-.room-zone {
-    position: absolute;
-    /* borderは共通スタイルで定義済み */
-}
-
-
-/* 中央セル (少し目立たなくする場合) */
-
-#zone-center {
-    font-size: 1.2em;
-    color: #555;
-    /* 少しグレーに */
-    background-color: rgba(255, 255, 255, 0.5);
-    /* 白っぽく */
-}
-
-
-/* ただしActiveになったらピンクになるように上書き */
-
-#zone-center.active {
-    background-color: rgba(255, 0, 166, 0.6) !important;
-    color: white !important;
+.tooltip-val {
+    color: #000;
+    font-family: monospace;
+    font-size: 1.1em;
 }
