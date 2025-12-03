@@ -1,0 +1,34 @@
+version: '3'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.13
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.13
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  mqtt-to-es:
+    image: node:22     # ★ ここを node:22 に変更（22-alpine でもOK）
+    container_name: mqtt-to-es
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      - MQTT_BROKER_URL=mqtt://150.65.179.132:7883
+      - ES_NODE=http://elasticsearch:9200
+      - ES_INDEX=smart-home-events
+    depends_on:
+      - elasticsearch
+    command: >
+      sh -c "npm install mqtt @elastic/elasticsearch &&
+             node mqtt_to_es.js"

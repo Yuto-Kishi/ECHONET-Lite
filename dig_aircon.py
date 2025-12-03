@@ -7,7 +7,8 @@ MQTT_BROKER = "150.65.179.132"
 MQTT_PORT = 7883
 
 # ★ 監視ターゲット: リビングのエアコン
-TARGET_ID = "C0A8033D-013501"
+
+TARGET_ID = "C0A80344-013501"
 
 def on_connect(client, userdata, flags, reason_code, properties):
     print(f"\n[診断開始] エアコン ({TARGET_ID}) を監視中...")

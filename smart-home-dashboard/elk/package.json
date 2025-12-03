@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "@elastic/elasticsearch": "^9.2.0",
+    "mqtt": "^5.14.1"
+  },
+  "name": "elk",
+  "version": "1.0.0",
+  "main": "mqtt_to_es.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
