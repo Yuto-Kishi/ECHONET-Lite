@@ -113,15 +113,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.pir-dot').forEach(dot => {
         const pirId = dot.id.replace('dot-', '');
         dot.addEventListener('mouseenter', () => {
-            if (sensorToEnvMap[pirId]) { activePIRId = pirId;
-                renderEnvTooltip(pirId); }
+            if (sensorToEnvMap[pirId]) {
+                activePIRId = pirId;
+                renderEnvTooltip(pirId);
+            }
         });
         dot.addEventListener('mousemove', (e) => {
-            if (activePIRId) { tooltip.style.top = (e.clientY + 15) + 'px';
-                tooltip.style.left = (e.clientX + 15) + 'px'; }
+            if (activePIRId) {
+                tooltip.style.top = (e.clientY + 15) + 'px';
+                tooltip.style.left = (e.clientX + 15) + 'px';
+            }
         });
-        dot.addEventListener('mouseleave', () => { activePIRId = null;
-            tooltip.style.display = 'none'; });
+        dot.addEventListener('mouseleave', () => {
+            activePIRId = null;
+            tooltip.style.display = 'none';
+        });
     });
 
     document.querySelectorAll('.appliance-icon').forEach(icon => {
@@ -134,8 +140,10 @@ document.addEventListener('DOMContentLoaded', () => {
             tooltip.style.top = (e.clientY + 15) + 'px';
             tooltip.style.left = (e.clientX + 15) + 'px';
         });
-        icon.addEventListener('mouseleave', () => { activeAppId = null;
-            tooltip.style.display = 'none'; });
+        icon.addEventListener('mouseleave', () => {
+            activeAppId = null;
+            tooltip.style.display = 'none';
+        });
     });
 
     const socket = new WebSocket(WS_URL);
