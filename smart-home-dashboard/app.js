@@ -1,20 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
     const WS_URL = 'ws://localhost:8080';
 
-    // 時計更新
     setInterval(() => {
         const now = new Date();
         const el = document.getElementById('realtime-clock');
         if (el) el.innerText = "JST " + now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
     }, 1000);
 
-    // データ保持用
     const latestEnvData = {};
     const applianceData = {};
     let activePIRId = null;
     let activeAppId = null;
 
-    // PIRとM5Stackの対応表
     const sensorToEnvMap = {
         'PIR1': 'M5Stack2',
         'PIR2': 'M5Stack2',
@@ -36,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tooltip = document.getElementById('env-tooltip');
 
-    // --- ツールチップ表示共通関数 ---
     function showTooltip(title, contentHTML) {
         let html = `<div style="border-bottom:2px solid #888; margin-bottom:5px; color:#555; font-size:1.1em; font-weight:bold;">${title}</div>`;
         html += contentHTML;
@@ -76,40 +72,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 body += `<div class="tooltip-row"><span class="tooltip-label">電源</span><span class="tooltip-val">${opStatus}</span></div>`;
             }
 
-            // 温度 (共通)
+            // --- 共通・空気清浄機 ---
             const temp = data.temperature || data.roomTemperature;
             if (temp !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">室温</span><span class="tooltip-val">${temp}℃</span></div>`;
-
-            // 湿度
             if (data.humidity !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">湿度</span><span class="tooltip-val">${data.humidity}%</span></div>`;
 
-            // PM2.5
-            if (data.pm25 !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">PM2.5</span><span class="tooltip-val">${data.pm25}µg</span></div>`;
+            if (data.dustValue !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">ホコリ</span><span class="tooltip-val">${data.dustValue}</span></div>`;
+            if (data.illuminanceValue !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">照度</span><span class="tooltip-val">${data.illuminanceValue}lx</span></div>`;
+            if (data.instantaneousElectricPowerConsumption !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">電力</span><span class="tooltip-val">${data.instantaneousElectricPowerConsumption}W</span></div>`;
+            if (data.airFlowLevel !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">風量</span><span class="tooltip-val">${data.airFlowLevel}</span></div>`;
 
-            // ガス
+            if (data.pm25 !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">PM2.5</span><span class="tooltip-val">${data.pm25}µg</span></div>`;
             if (data.gasContaminationValue !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">ガス</span><span class="tooltip-val">${data.gasContaminationValue}</span></div>`;
 
-            // エアコン: 外気温
+            // --- エアコン特有 ---
             if (data.outsideTemperature !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">外気温</span><span class="tooltip-val">${data.outsideTemperature}℃</span></div>`;
-
-            // エアコン: 人検知
             if (data.humanDetected !== undefined) {
                 const human = data.humanDetected ? '<span style="color:#ff007c;">あり</span>' : 'なし';
                 body += `<div class="tooltip-row"><span class="tooltip-label">人検知</span><span class="tooltip-val">${human}</span></div>`;
             }
+            if (data.blowingOutAirTemperature !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">吹出温度</span><span class="tooltip-val">${data.blowingOutAirTemperature}℃</span></div>`;
 
-            // エアコン: CO2
+            // ★★★ 修正: 日射センサー (数値をそのまま表示) ★★★
+            if (data.sunshineSensorData !== undefined) {
+                body += `<div class="tooltip-row"><span class="tooltip-label">日射</span><span class="tooltip-val">${data.sunshineSensorData}</span></div>`;
+            }
+
             if (data.co2Concentration !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">CO2</span><span class="tooltip-val">${data.co2Concentration}ppm</span></div>`;
 
             // 設定温度
             const setTemp = data.setTemperature || data.targetTemperature;
             if (setTemp !== undefined) body += `<div class="tooltip-row"><span class="tooltip-label">設定</span><span class="tooltip-val">${setTemp}℃</span></div>`;
+
+            // モード
+            if (data.operationMode) body += `<div class="tooltip-row"><span class="tooltip-label">モード</span><span class="tooltip-val">${data.operationMode}</span></div>`;
         }
         showTooltip(appId, body);
     }
 
-    // --- イベントリスナー設定 ---
-    // PIR
     document.querySelectorAll('.pir-dot').forEach(dot => {
         const pirId = dot.id.replace('dot-', '');
         dot.addEventListener('mouseenter', () => {
@@ -124,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tooltip.style.display = 'none'; });
     });
 
-    // 家電
     document.querySelectorAll('.appliance-icon').forEach(icon => {
         const appId = icon.id.replace('app-', '');
         icon.addEventListener('mouseenter', () => {
@@ -139,53 +138,33 @@ document.addEventListener('DOMContentLoaded', () => {
             tooltip.style.display = 'none'; });
     });
 
-    // --- WebSocket受信処理 ---
     const socket = new WebSocket(WS_URL);
-
-    socket.onopen = () => { console.log('[WS] Connected'); };
-
     socket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
 
-            // PIR
             if (data.type === 'pir_presence') {
                 const dot = document.getElementById(`dot-${data.sensor}`);
                 if (dot) data.state ? dot.classList.add('active') : dot.classList.remove('active');
-            }
-            // M5Stack
-            else if (data.type === 'air_quality') {
+            } else if (data.type === 'air_quality') {
                 if (data.sensor) updateEnvData(data.sensor, data.property, data.value);
-            }
-            // ★★★ 家電データ ★★★
-            else if (data.type === 'appliance_data') {
-                // データ枠作成
+            } else if (data.type === 'appliance_data') {
                 if (!applianceData[data.deviceId]) applianceData[data.deviceId] = {};
+                if (typeof data.value === 'object') Object.assign(applianceData[data.deviceId], data.value);
+                else applianceData[data.deviceId][data.property] = data.value;
 
-                // customF1 / customF6 / customFA などのオブジェクトを展開して保存
-                if (typeof data.value === 'object' && data.value !== null) {
-                    Object.assign(applianceData[data.deviceId], data.value);
-                } else {
-                    // 通常プロパティ
-                    applianceData[data.deviceId][data.property] = data.value;
-                }
-
-                // アイコンの点灯制御 (電源ONなら光る)
-                if (applianceData[data.deviceId].operationStatus !== undefined) {
+                if (data.property === 'operationStatus' || applianceData[data.deviceId].operationStatus !== undefined) {
                     const icon = document.getElementById(`app-${data.deviceId}`);
                     if (icon) {
                         const isOn = applianceData[data.deviceId].operationStatus;
                         isOn ? icon.classList.add('active') : icon.classList.remove('active');
                     }
                 }
-
-                // ツールチップ表示中なら更新
                 if (activeAppId === data.deviceId) renderAppTooltip(activeAppId);
             }
         } catch (e) { console.error(e); }
     };
 
-    // M5Stackデータ保存用
     function updateEnvData(deviceId, property, value) {
         if (!latestEnvData[deviceId]) latestEnvData[deviceId] = {};
         let type = '';
