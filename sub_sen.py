@@ -12,7 +12,7 @@ CID = "53965d6805152d95"
 # "PIR18" なのか "pir18" なの
 # か注意してください。
 
-DEVICE_TO_CHECK = "M5Stack4"
+DEVICE_TO_CHECK = "M5Stack3"
 
 # トピックを作成 (/server/CID/PIR18/#)
 TOPIC_TO_SUBSCRIBE = f"/server/{CID}/{DEVICE_TO_CHECK}/#"
