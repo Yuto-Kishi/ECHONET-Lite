@@ -13,7 +13,7 @@ const HTTP_PORT = 8030;
 const WS_PORT = 8081;
 
 // ★ 監視対象デバイス
-const TARGET_DEVICE = 'C0A80368-013001';
+const TARGET_DEVICE = 'C0A8033B-013501';
 
 // --- サーバーセットアップ ---
 const app = express();
