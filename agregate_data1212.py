@@ -17,7 +17,7 @@ MQTT_BROKER = "150.65.179.132"
 MQTT_PORT = 7883
 MQTT_TOPIC = "/server/#"
 
-CSV_FILE = "./smart-home-dashboard/smart_home_1231.csv"
+CSV_FILE = "./smart-home-dashboard/smart_home_0101.csv"
 FLUSH_INTERVAL_SEC = 10
 WEB_PORT = 5001
 
